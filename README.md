@@ -1,1 +1,2 @@
 # chatab
+快速提交问题到chatgpt或者deepseek
