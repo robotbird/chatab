@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>ChatAB 扩展设置</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      padding: 20px;
+      max-width: 600px;
+      margin: 0 auto;
+      color: #333;
+    }
+    .setting-item {
+      margin-bottom: 20px;
+      padding: 10px;
+      border-radius: 5px;
+      background-color: #f8f9fa;
+    }
+    .setting-title {
+      font-weight: bold;
+      margin-bottom: 8px;
+    }
+    .setting-description {
+      font-size: 0.9em;
+      color: #666;
+      margin-bottom: 10px;
+    }
+    input[type="checkbox"] {
+      margin-right: 8px;
+    }
+    button {
+      background-color: #4285f4;
+      color: white;
+      border: none;
+      padding: 8px 16px;
+      border-radius: 4px;
+      cursor: pointer;
+      margin-top: 20px;
+    }
+    button:hover {
+      background-color: #3367d6;
+    }
+    .status {
+      margin-top: 10px;
+      font-style: italic;
+      color: #4CAF50;
+      display: none;
+    }
+  </style>
+</head>
+<body>
+  <h1>ChatAB 扩展设置</h1>
+  
+  <div class="setting-item">
+    <div class="setting-title">显示URL参数</div>
+    <div class="setting-description">在DeepSeek页面上暂时显示URL中的q参数值</div>
+    <label>
+      <input type="checkbox" id="showUrlParams" checked>
+      启用URL参数显示
+    </label>
+  </div>
+
+  <div class="setting-item">
+    <div class="setting-title">显示时间</div>
+    <div class="setting-description">URL参数显示的持续时间（秒）</div>
+    <input type="number" id="displayDuration" min="1" max="20" value="5" style="width: 60px;">
+  </div>
+  
+  <button id="save">保存设置</button>
+  <div id="status" class="status">设置已保存!</div>
+
+  <script src="options.js"></script>
+</body>
+</html> 
