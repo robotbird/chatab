@@ -125,6 +125,8 @@ export const Frame = (): JSX.Element => {
   }
 
   const [models, setModels] = useState(originalModels);
+  // 新增：控制模型下拉菜单 hover 展开
+  const [isModelDropdownOpen, setIsModelDropdownOpen] = useState(false);
 
   // 解析URL参数
   useEffect(() => {
@@ -286,60 +288,64 @@ export const Frame = (): JSX.Element => {
             {/* Bottom bar with model selector and send button */}
             <div className="flex items-center justify-between">
               <div className="">
-                <div className={`h-[32px] ${isDark ? 'bg-gray-700' : 'bg-[#f2f2f2]'} rounded-[20px] px-4 flex items-center group`}>
-                  <div className="flex items-center gap-1">
-                    <Select 
-                      value={selectedModel} 
-                      onValueChange={handleModelChange}
-                      onOpenChange={setIsOpen}
+                {/* 自定义模型选择器，hover 展开 */}
+                <div
+                  className={`h-[34px] ${isDark ? 'bg-gray-700' : 'bg-[#f2f2f2]'} rounded-[20px] px-2.5 flex items-center group relative select-none`}
+                  onMouseEnter={() => setIsModelDropdownOpen(true)}
+                  onMouseLeave={() => setIsModelDropdownOpen(false)}
+                  style={{ minWidth: 40, maxWidth: isModelDropdownOpen ? 180 : 40, transition: 'max-width 0.2s cubic-bezier(0.4,0,0.2,1)' }}
+                >
+                  <div className="flex items-center gap-1 cursor-pointer">
+                    {/* 当前选中模型图标始终显示，名称和链接icon仅在hover时显示 */}
+                    <div className="flex items-center">
+                      <img
+                        className="w-5 h-5 object-cover mr-0"
+                        alt={`${selectedModel} icon`}
+                        src={models.find(m => m.id === selectedModel)?.icon}
+                      />
+                      <span
+                        className={`font-['Roboto',Helvetica] font-normal ${isDark ? 'text-gray-200' : 'text-[#666666]'} text-sm tracking-[0.50px] ml-2 transition-all duration-200 ${isModelDropdownOpen ? 'opacity-100 max-w-[100px]' : 'opacity-0 max-w-0 overflow-hidden'}`}
+                        style={{ transition: 'opacity 0.2s, max-width 0.2s, margin-left 0.2s' }}
+                      >
+                        {models.find(m => m.id === selectedModel)?.name}
+                      </span>
+                      <ChevronDown className={`w-4 h-4 ml-1 transition-transform duration-200 ${isModelDropdownOpen ? 'opacity-100' : 'opacity-0'} ${isModelDropdownOpen ? 'rotate-180' : ''} ${isDark ? 'text-gray-400' : 'text-gray-500'}`} />
+                    </div>
+                    {/* 下拉菜单 */}
+                    <ul
+                      className={`absolute left-0 top-[110%] w-[180px] z-50 rounded-[10px] shadow-md p-1 transition-all duration-200 overflow-hidden
+                        ${isDark ? 'bg-gray-800 border border-gray-700' : 'bg-white'}
+                        ${isModelDropdownOpen ? 'opacity-100 pointer-events-auto translate-y-0 max-h-60' : 'opacity-0 pointer-events-none -translate-y-2 max-h-0'}
+                      `}
+                      style={{ boxShadow: isModelDropdownOpen ? '0 4px 16px 0 rgba(0,0,0,0.10)' : 'none' }}
                     >
-                      <SelectTrigger className="w-full h-[30px] bg-transparent border-none shadow-none focus:ring-0 px-0 py-0 flex items-center cursor-pointer justify-start">
-                        <SelectValue>
-                          <div className="flex items-center">
-                            <img
-                              className="w-5 h-5 object-cover mr-2"
-                              alt={`${selectedModel} icon`}
-                              src={models.find(m => m.id === selectedModel)?.icon}
-                            />
-                            <span className={`font-['Roboto',Helvetica] font-normal ${
-                              isDark ? 'text-gray-200' : 'text-[#666666]'
-                            } text-sm tracking-[0.50px]`}>
-                              {models.find(m => m.id === selectedModel)?.name}
-                            </span>
-                          </div>
-                        </SelectValue>
-                      </SelectTrigger>
-                      <SelectContent position="popper" className={`w-[180px] ${
-                        isDark ? 'bg-gray-800 border-gray-700' : 'bg-white'
-                      } rounded-[10px] shadow-md z-50 p-1`}>
-                        {models.map((model) => (
-                          <SelectItem
-                            key={model.id}
-                            value={model.id}
-                            className={`group flex items-center py-1.5 px-2 ${
-                              isDark ? 'hover:bg-gray-700' : 'hover:bg-[#f5f5f5]'
-                            } rounded-[5px] cursor-pointer relative`}
-                          >
-                            <div className="flex items-center flex-1 min-w-0">
-                              <img 
-                                className="w-5 h-5 object-cover mr-2"
-                                alt={`${model.name} icon`}
-                                src={model.icon}
-                              />
-                              <span className={`font-['Roboto',Helvetica] font-normal truncate ${
-                                isDark ? 'text-gray-200' : 'text-[#666666]'
-                              } text-sm tracking-[0.50px]`}>
-                                {model.name}
-                              </span>
-                            </div>
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                      {models.map((model) => (
+                        <li
+                          key={model.id}
+                          onClick={() => {
+                            handleModelChange(model.id);
+                            setIsModelDropdownOpen(false);
+                          }}
+                          className={`flex items-center py-1.5 px-2 rounded-[5px] cursor-pointer relative group
+                            ${isDark ? 'hover:bg-gray-700' : 'hover:bg-[#f5f5f5]'}
+                            ${selectedModel === model.id ? (isDark ? 'bg-gray-700' : 'bg-[#f5f5f5]') : ''}
+                          `}
+                        >
+                          <img 
+                            className="w-5 h-5 object-cover mr-2"
+                            alt={`${model.name} icon`}
+                            src={model.icon}
+                          />
+                          <span className={`font-['Roboto',Helvetica] font-normal truncate ${isDark ? 'text-gray-200' : 'text-[#666666]'} text-sm tracking-[0.50px]`}>
+                            {model.name}
+                          </span>
+                        </li>
+                      ))}
+                    </ul>
                     <IconLink
                       href={models.find(m => m.id === selectedModel)?.link}
                       target="_blank"
-                      className="ml-2 w-5 h-5 opacity-0 group-hover:opacity-100 transition-opacity duration-150"
+                      className={`ml-2 w-5 h-5 transition-opacity duration-150 ${isModelDropdownOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
                       style={{ maxHeight: '1.5em' }}
                     />
                   </div>
