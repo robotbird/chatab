@@ -4,8 +4,8 @@ console.log('ChatAB Extension: Content script loaded for DeepSeek');
 // 等待页面加载完成
 window.addEventListener('load', function() {
   // // 获取URL参数
-  // const url = new URL(window.location.href);
-  // const params = Array.from(url.searchParams.entries());
+  const url = new URL(window.location.href);
+  const params = Array.from(url.searchParams.entries());
 
   // // 创建显示元素
   // const displayElement = document.createElement('div');

@@ -65,36 +65,66 @@ export const Frame = (): JSX.Element => {
   }, [selectedModel]);
 
   // Model data for mapping
-  const models = [
+  const originalModels = [
     {
       id: "deepseek",
       name: "DeepSeek",
       icon: "/deepseek.png",
       url: "https://chat.deepseek.com",
-      link:"https://chat.deepseek.com"
+      link: "https://chat.deepseek.com"
     },
     {
       id: "chatgpt",
       name: "ChatGPT",
       icon: "/chatGPT.png",
       url: "https://chatgpt.com",
-      link:"https://chatgpt.com"
+      link: "https://chatgpt.com"
     },
     {
       id: "doubao",
       name: "Doubao",
       icon: "/logo/doubao.png",
       url: "https://www.doubao.com/chat/",
-      link:"https://www.doubao.com/chat/"
+      link: "https://www.doubao.com/chat/"
     },
     {
       id: "gemini",
       name: "Gemini",
       icon: "/logo/gemini.png",
       url: "https://gemini.google.com",
-      link:"https://gemini.google.com"
+      link: "https://gemini.google.com"
     }
   ];
+
+  // 工具函数：读取 recentModels
+  function getRecentModels(): string[] {
+    try {
+      const stored = localStorage.getItem('recentModels');
+      if (stored) {
+        const arr = JSON.parse(stored);
+        if (Array.isArray(arr)) return arr;
+      }
+    } catch {}
+    return [];
+  }
+  // 工具函数：写入 recentModels
+  function setRecentModels(arr: string[]) {
+    localStorage.setItem('recentModels', JSON.stringify(arr));
+  }
+
+  // 根据 recentModels 排序 models
+  function getSortedModels(recent: string[]): typeof originalModels {
+    const idSet = new Set(recent);
+    const sorted = [
+      ...recent
+        .map(id => originalModels.find(m => m.id === id))
+        .filter(Boolean) as typeof originalModels,
+      ...originalModels.filter(m => !idSet.has(m.id))
+    ];
+    return sorted;
+  }
+
+  const [models, setModels] = useState(originalModels);
 
   // 解析URL参数
   useEffect(() => {
@@ -120,6 +150,18 @@ export const Frame = (): JSX.Element => {
       
       // 标记需要自动发送
       setShouldAutoSend(true);
+    }
+  }, []);
+  
+  // 初始化 recentModels 和 selectedModel
+  useEffect(() => {
+    const recent = getRecentModels();
+    if (recent.length > 0) {
+      setModels(getSortedModels(recent));
+      setSelectedModel(recent[0]);
+    } else {
+      setModels(originalModels);
+      setSelectedModel("chatgpt");
     }
   }, []);
   
@@ -196,6 +238,16 @@ export const Frame = (): JSX.Element => {
     }
   };
 
+  // 选择 model 时，更新 recentModels 顺序和存储
+  const handleModelChange = (modelId: string) => {
+    setSelectedModel(modelId);
+    setModels(prev => {
+      const newRecent = [modelId, ...prev.filter(m => m.id !== modelId).map(m => m.id)];
+      setRecentModels(newRecent);
+      return getSortedModels(newRecent);
+    });
+  };
+
   return (
     <div className={`transition-colors duration-200 ${isDark ? 'bg-gray-900' : 'bg-transparent'} flex flex-col items-center justify-center w-full min-h-screen`}>
       <div className="w-full max-w-[800px] mx-auto relative">
@@ -238,7 +290,7 @@ export const Frame = (): JSX.Element => {
                   <div className="flex items-center gap-1">
                     <Select 
                       value={selectedModel} 
-                      onValueChange={setSelectedModel}
+                      onValueChange={handleModelChange}
                       onOpenChange={setIsOpen}
                     >
                       <SelectTrigger className="w-full h-[30px] bg-transparent border-none shadow-none focus:ring-0 px-0 py-0 flex items-center cursor-pointer justify-start">
