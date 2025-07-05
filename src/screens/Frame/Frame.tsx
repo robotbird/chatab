@@ -44,7 +44,6 @@ export const Frame = (): JSX.Element => {
   const [selectedModel, setSelectedModel] = useState("chatgpt");
   const [inputValue, setInputValue] = useState("");
   const [isOpen, setIsOpen] = useState(false);
-  const [flomoApi, setFlomoApi] = useState<string>("");
   const [placeholder, setPlaceholder] = useState("输入你的问题");
   const [charCount, setCharCount] = useState(0);
   const [shouldAutoSend, setShouldAutoSend] = useState(false);
@@ -55,60 +54,15 @@ export const Frame = (): JSX.Element => {
     return false;
   });
 
-  // Load flomo API and DeepSeek status on component mount
-  useEffect(() => {
-    // Check if chrome.storage API is available (browser extension environment)
-    if (typeof window !== 'undefined' && window.chrome && window.chrome.storage) {
-      window.chrome.storage.sync.get(['flomoApi'], (result) => {
-        if (result.flomoApi) {
-          setFlomoApi(result.flomoApi);
-        }
-      });
-
-      // 检查是否有活跃的DeepSeek页面
-      window.chrome.storage.local.get(['deepSeekPageStatus'], (result) => {
-        if (result.deepSeekPageStatus && result.deepSeekPageStatus.isActive) {
-          console.log('DeepSeek page is active:', result.deepSeekPageStatus);
-          // 这里可以做一些处理，例如显示通知或更改UI
-        }
-      });
-
-      // 监听DeepSeek页面状态变化
-      window.chrome.runtime.onMessage.addListener((message) => {
-        if (message.action === 'deepSeekStatusChanged') {
-          console.log('DeepSeek status changed:', message.status);
-          // 这里可以做一些处理，例如显示通知或更改UI
-        }
-      });
-    } else {
-      // Fallback for development environment
-      const savedApi = localStorage.getItem('flomoApi');
-      if (savedApi) {
-        setFlomoApi(savedApi);
-      }
-    }
-  }, []);
-
   useEffect(() => {
     document.documentElement.classList.toggle('dark', isDark);
   }, [isDark]);
 
   // Update placeholder when model changes
   useEffect(() => {
-    if (selectedModel === 'flomo') {
-      if (!flomoApi) {
-        setPlaceholder("请先输入您的flomo API");
-      } else {
-        setPlaceholder("保存内容到flomo");
-        setInputValue("");
-      }
-    } else {
-      setPlaceholder("输入你的问题");
-    }
-    
-    // Reset count whenever model changes
+    setPlaceholder("输入你的问题");
     setCharCount(0);
-  }, [selectedModel, flomoApi]);
+  }, [selectedModel]);
 
   // Model data for mapping
   const models = [
@@ -126,26 +80,20 @@ export const Frame = (): JSX.Element => {
       url: "https://chatgpt.com",
       link:"https://chatgpt.com"
     },
-    // {
-    //   id: "bing",
-    //   name: "Bing",
-    //   icon: "/bing.png",
-    //   url: "https://bing.com/search",
-    //   link:"https://bing.com"
-    // },
-    // {
-    //   id: "google",
-    //   name: "Google",
-    //   icon: "/google.png",
-    //   url: "https://www.google.com/search",
-    //   link:"https://www.google.com"
-    // },
-    // {
-    //   id: "flomo",
-    //   name: "Flomo",
-    //   icon: "/flomo.png",
-    //   url: ""
-    // },
+    {
+      id: "doubao",
+      name: "Doubao",
+      icon: "/logo/doubao.png",
+      url: "https://www.doubao.com/chat/",
+      link:"https://www.doubao.com/chat/"
+    },
+    {
+      id: "gemini",
+      name: "Gemini",
+      icon: "/logo/gemini.png",
+      url: "https://gemini.google.com",
+      link:"https://gemini.google.com"
+    }
   ];
 
   // 解析URL参数
@@ -178,52 +126,6 @@ export const Frame = (): JSX.Element => {
   // 处理发送功能
   const handleSend = () => {
     if (!inputValue.trim()) return;
-    
-    if (selectedModel === 'flomo') {
-      // 处理flomo的逻辑...保持不变
-      if (!flomoApi) {
-        // Save flomo API
-        if (typeof window !== 'undefined' && window.chrome && window.chrome.storage) {
-          window.chrome.storage.sync.set({ flomoApi: inputValue }, () => {
-            setFlomoApi(inputValue);
-            setInputValue("");
-            setCharCount(0);
-          });
-        } else {
-          // Fallback for development environment
-          localStorage.setItem('flomoApi', inputValue);
-          setFlomoApi(inputValue);
-          setInputValue("");
-          setCharCount(0);
-        }
-      } else {
-        // Send content to flomo API
-        fetch(flomoApi, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            content: inputValue
-          })
-        })
-          .then(response => {
-            if (response.ok) {
-              setInputValue("");
-              setCharCount(0);
-              setPlaceholder("内容已成功保存到 flomo");
-            } else {
-              setPlaceholder("发送失败，请检查 API 地址是否正确");
-            }
-          })
-          .catch(error => {
-            console.error("Error sending to flomo:", error);
-            setPlaceholder("发送失败，请检查网络连接");
-          });
-      }
-      return;
-    }
-
     const model = models.find(m => m.id === selectedModel);
     if (model) {
       const encodedQuery = encodeURIComponent(inputValue);
@@ -260,9 +162,6 @@ export const Frame = (): JSX.Element => {
 
   // Get max char limit based on input type
   const getCharLimit = (): number => {
-    if (selectedModel === 'flomo') {
-      return 5000; // No specific limit for flomo
-    }
     return isPrimarilyChinese(inputValue) ? 200 : 1500;
   };
 
@@ -271,12 +170,10 @@ export const Frame = (): JSX.Element => {
     const newText = e.target.value;
     const isChinese = isPrimarilyChinese(newText);
     const limit = isChinese ? 200 : 1500;
-    
     // Only update if we're within limits or deleting
-    if (selectedModel === 'flomo' || newText.length <= limit || newText.length < inputValue.length) {
+    if (newText.length <= limit || newText.length < inputValue.length) {
       setInputValue(newText);
       setCharCount(newText.length);
-      
       // Auto-adjust height
       e.target.style.height = '40px'; // Reset height
       e.target.style.height = `${Math.min(120, e.target.scrollHeight)}px`; // Set new height with max limit
@@ -302,15 +199,7 @@ export const Frame = (): JSX.Element => {
   return (
     <div className={`transition-colors duration-200 ${isDark ? 'bg-gray-900' : 'bg-transparent'} flex flex-col items-center justify-center w-full min-h-screen`}>
       <div className="w-full max-w-[800px] mx-auto relative">
-        {/* Debug indicator for URL parameters */}
-        {/* {new URLSearchParams(window.location.search).get('q') && (
-          <div className={`absolute left-2 top-[-40px] px-3 py-1 rounded-md ${isDark ? 'bg-gray-800 text-gray-300' : 'bg-gray-100 text-gray-700'} text-xs`}>
-            URL参数: q={new URLSearchParams(window.location.search).get('q')}
-            {new URLSearchParams(window.location.search).get('model') && 
-              `, model=${new URLSearchParams(window.location.search).get('model')}`
-            }
-          </div>
-        )} */}
+ 
         
         <button
           onClick={() => setIsDark(!isDark)}
@@ -335,13 +224,11 @@ export const Frame = (): JSX.Element => {
                   isDark ? 'text-white placeholder:text-gray-400' : 'text-[#1e1e1e] placeholder:text-gray-400'
                 }`}
               />
-              {selectedModel !== 'flomo' && (
-                <div className={`absolute right-5 bottom-0 text-xs ${
-                  charCount >= getCharLimit() ? 'text-red-500' : (isDark ? 'text-gray-400' : 'text-gray-500')
-                }`}>
-                  {charCount}/{getCharLimit()}
-                </div>
-              )}
+              <div className={`absolute right-5 bottom-0 text-xs ${
+                charCount >= getCharLimit() ? 'text-red-500' : (isDark ? 'text-gray-400' : 'text-gray-500')
+              }`}>
+                {charCount}/{getCharLimit()}
+              </div>
             </div>
             
             {/* Bottom bar with model selector and send button */}
