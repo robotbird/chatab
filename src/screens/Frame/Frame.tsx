@@ -1,5 +1,5 @@
 import { ArrowUpCircleIcon, ChevronDown, Sun, Moon } from "lucide-react";
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Card, CardContent } from "../../components/ui/card";
 import {
   Select,
@@ -44,9 +44,8 @@ export const Frame = (): JSX.Element => {
   const [selectedModel, setSelectedModel] = useState("chatgpt");
   const [inputValue, setInputValue] = useState("");
   const [isOpen, setIsOpen] = useState(false);
-  const [placeholder, setPlaceholder] = useState("输入你的问题");
+  const [placeholder, setPlaceholder] = useState("Ask anything");
   const [charCount, setCharCount] = useState(0);
-  const [shouldAutoSend, setShouldAutoSend] = useState(false);
   const [isDark, setIsDark] = useState(() => {
     if (typeof window !== 'undefined') {
       return window.matchMedia('(prefers-color-scheme: dark)').matches;
@@ -60,7 +59,7 @@ export const Frame = (): JSX.Element => {
 
   // Update placeholder when model changes
   useEffect(() => {
-    setPlaceholder("输入你的问题");
+    setPlaceholder("Ask anything");
     setCharCount(0);
   }, [selectedModel]);
 
@@ -93,6 +92,13 @@ export const Frame = (): JSX.Element => {
       icon: "/logo/gemini.png",
       url: "https://gemini.google.com",
       link: "https://gemini.google.com"
+    },
+    {
+      id: "perplexity",
+      name: "Perplexity",
+      icon: "/logo/perplexity.png",
+      url: "https://www.perplexity.ai",
+      link: "https://www.perplexity.ai"
     }
   ];
 
@@ -127,34 +133,23 @@ export const Frame = (): JSX.Element => {
   const [models, setModels] = useState(originalModels);
   // 新增：控制模型下拉菜单 hover 展开
   const [isModelDropdownOpen, setIsModelDropdownOpen] = useState(false);
+  // 新增：用于延迟隐藏下拉菜单的定时器
+  const hideDropdownTimer = useRef<number | null>(null);
 
-  // 解析URL参数
-  useEffect(() => {
-    // 解析URL查询参数
-    const searchParams = new URLSearchParams(window.location.search);
-    const queryParam = searchParams.get('q');
-    const modelParam = searchParams.get('model');
-    
-    if (queryParam) {
-      // 解码URL编码的查询参数
-      const decodedQuery = decodeURIComponent(queryParam);
-      
-      // 设置输入值
-      setInputValue(decodedQuery);
-      
-      // 更新字符计数
-      setCharCount(decodedQuery.length);
-      
-      // 如果URL中指定了模型，则设置为当前模型
-      if (modelParam && models.some(m => m.id === modelParam)) {
-        setSelectedModel(modelParam);
-      }
-      
-      // 标记需要自动发送
-      setShouldAutoSend(true);
+  // 延迟隐藏下拉菜单的处理函数
+  const handleModelDropdownMouseEnter = () => {
+    if (hideDropdownTimer.current) {
+      clearTimeout(hideDropdownTimer.current);
+      hideDropdownTimer.current = null;
     }
-  }, []);
-  
+    setIsModelDropdownOpen(true);
+  };
+  const handleModelDropdownMouseLeave = () => {
+    hideDropdownTimer.current = window.setTimeout(() => {
+      setIsModelDropdownOpen(false);
+    }, 150);
+  };
+
   // 初始化 recentModels 和 selectedModel
   useEffect(() => {
     const recent = getRecentModels();
@@ -167,60 +162,26 @@ export const Frame = (): JSX.Element => {
     }
   }, []);
   
-  // 处理发送功能
+  // 处理发送功能 - 移除URL参数传递
   const handleSend = () => {
     if (!inputValue.trim()) return;
     const model = models.find(m => m.id === selectedModel);
     if (model) {
-      const encodedQuery = encodeURIComponent(inputValue);
-      const url = `${model.url}?q=${encodedQuery}`;
-      window.location.href = url;
+      window.location.href = model.url;
     }
   };
   
-  // 自动发送处理
-  useEffect(() => {
-    if (shouldAutoSend) {
-      // 自动调整输入框高度
-      const textarea = document.querySelector('textarea');
-      if (textarea) {
-        textarea.style.height = '40px';
-        textarea.style.height = `${Math.min(120, textarea.scrollHeight)}px`;
-      }
-      
-      // 延迟发送，确保所有状态都已更新
-      const timer = setTimeout(() => {
-        handleSend();
-        setShouldAutoSend(false); // 重置标记
-      }, 300);
-      
-      return () => clearTimeout(timer);
-    }
-  }, [shouldAutoSend, handleSend, selectedModel, inputValue]);
-
-  // Helper function to check if text is primarily Chinese
-  const isPrimarilyChinese = (text: string): boolean => {
-    const chineseChars = text.match(/[\u4e00-\u9fa5]/g)?.length || 0;
-    return chineseChars > text.length / 2;
-  };
-
-  // Get max char limit based on input type
-  const getCharLimit = (): number => {
-    return isPrimarilyChinese(inputValue) ? 200 : 1500;
-  };
-
-  // Update input with char limit check
+  // Update input without char limit check
   const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const newText = e.target.value;
-    const isChinese = isPrimarilyChinese(newText);
-    const limit = isChinese ? 200 : 1500;
-    // Only update if we're within limits or deleting
-    if (newText.length <= limit || newText.length < inputValue.length) {
-      setInputValue(newText);
-      setCharCount(newText.length);
-      // Auto-adjust height
-      e.target.style.height = '40px'; // Reset height
-      e.target.style.height = `${Math.min(120, e.target.scrollHeight)}px`; // Set new height with max limit
+    setInputValue(newText);
+    setCharCount(newText.length);
+    // Auto-adjust height
+    e.target.style.height = '40px'; // Reset height
+    e.target.style.height = `${Math.min(120, e.target.scrollHeight)}px`; // Set new height with max limit
+    // 输入变化时实时写入 storage
+    if (window.chrome?.storage?.local) {
+      window.chrome.storage.local.set({ inputValue: newText });
     }
   };
 
@@ -278,21 +239,20 @@ export const Frame = (): JSX.Element => {
                   isDark ? 'text-white placeholder:text-gray-400' : 'text-[#1e1e1e] placeholder:text-gray-400'
                 }`}
               />
-              <div className={`absolute right-5 bottom-0 text-xs ${
-                charCount >= getCharLimit() ? 'text-red-500' : (isDark ? 'text-gray-400' : 'text-gray-500')
-              }`}>
-                {charCount}/{getCharLimit()}
-              </div>
             </div>
             
             {/* Bottom bar with model selector and send button */}
             <div className="flex items-center justify-between">
               <div className="">
-                {/* 自定义模型选择器，hover 展开 */}
+                {/* 延迟隐藏：onMouseEnter/onMouseLeave 绑定外层，穿越空白区域不立即关闭 */}
                 <div
-                  className={`h-[34px] ${isDark ? 'bg-gray-700' : 'bg-[#f2f2f2]'} rounded-[20px] px-2.5 flex items-center group relative select-none`}
-                  onMouseEnter={() => setIsModelDropdownOpen(true)}
-                  onMouseLeave={() => setIsModelDropdownOpen(false)}
+                  className="relative inline-block"
+                  onMouseEnter={handleModelDropdownMouseEnter}
+                  onMouseLeave={handleModelDropdownMouseLeave}
+                >
+                  {/* 按钮内容 */}
+                <div
+                    className={`h-[34px] ${isDark ? 'bg-gray-700' : 'bg-[#f2f2f2]'} rounded-[20px] px-2.5 flex items-center group select-none`}
                   style={{ minWidth: 40, maxWidth: isModelDropdownOpen ? 180 : 40, transition: 'max-width 0.2s cubic-bezier(0.4,0,0.2,1)' }}
                 >
                   <div className="flex items-center gap-1 cursor-pointer">
@@ -311,7 +271,15 @@ export const Frame = (): JSX.Element => {
                       </span>
                       <ChevronDown className={`w-4 h-4 ml-1 transition-transform duration-200 ${isModelDropdownOpen ? 'opacity-100' : 'opacity-0'} ${isModelDropdownOpen ? 'rotate-180' : ''} ${isDark ? 'text-gray-400' : 'text-gray-500'}`} />
                     </div>
-                    {/* 下拉菜单 */}
+                      <IconLink
+                        href={models.find(m => m.id === selectedModel)?.link}
+                        target="_blank"
+                        className={`ml-2 w-5 h-5 transition-opacity duration-150 ${isModelDropdownOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
+                        style={{ maxHeight: '1.5em' }}
+                      />
+                    </div>
+                  </div>
+                  {/* 下拉菜单内容，和按钮为兄弟节点 */}
                     <ul
                       className={`absolute left-0 top-[110%] w-[180px] z-50 rounded-[10px] shadow-md p-1 transition-all duration-200 overflow-hidden
                         ${isDark ? 'bg-gray-800 border border-gray-700' : 'bg-white'}
@@ -342,13 +310,6 @@ export const Frame = (): JSX.Element => {
                         </li>
                       ))}
                     </ul>
-                    <IconLink
-                      href={models.find(m => m.id === selectedModel)?.link}
-                      target="_blank"
-                      className={`ml-2 w-5 h-5 transition-opacity duration-150 ${isModelDropdownOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
-                      style={{ maxHeight: '1.5em' }}
-                    />
-                  </div>
                 </div>
               </div>
               <div className="flex items-center">

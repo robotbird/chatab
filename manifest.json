@@ -1,30 +1,41 @@
 {
   "manifest_version": 3,
-  "name": "chatab",
-  "version": "1.0.0",
-  "description": "Quick access to ChatGPT, DeepSeek, and other AI chat applications",
-  "author": "ChatAB",
+  "name": "ChaTab",
+  "version": "1.0.1",
+  "description": "Quickly submit queries to ChatGPT, Gemini, DeepSeek, Perplexity, Doubao, and more — all in one place.",
+  "author": "ChaTab",
   "chrome_url_overrides": {
     "newtab": "index.html"
   },
   "action": {
     "default_icon": "icons/icon48.png",
-    "default_title": "ChatAB"
+    "default_title": "ChaTab"
   },
   "icons": {
     "16": "icons/icon16.png",
     "48": "icons/icon48.png",
     "128": "icons/icon128.png"
   },
+  "permissions": [
+    "storage"
+  ],
   "host_permissions": [
-    "https://chat.deepseek.com/*"
+    "https://chat.deepseek.com/*",
+    "https://chatgpt.com/*",
+    "https://chat.openai.com/*",
+    "https://gemini.google.com/*",
+    "https://www.doubao.com/*",
+    "https://www.perplexity.ai/*"
   ],
   "content_scripts": [
     {
       "matches": [
-        "https://www.doubao.com/chat/*",
         "https://chat.deepseek.com/*",
-        "https://gemini.google.com/*"
+        "https://chatgpt.com/*",
+        "https://chat.openai.com/*",
+        "https://gemini.google.com/*",
+        "https://www.doubao.com/chat/*",
+        "https://www.perplexity.ai/*"
       ],
       "js": ["contentScript.js"]
     }
