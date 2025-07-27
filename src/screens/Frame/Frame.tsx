@@ -111,6 +111,12 @@ export const Frame = (): JSX.Element => {
       icon:"/logo/yuanbao.png",
       url:"https://yuanbao.tencent.com",
       link:"https://yuanbao.tencent.com"
+    },{
+      id:"grok",
+      name:"Grok",
+      icon:"/logo/grok.png",
+      url:"https://grok.com",
+      link:"https://grok.com"
     }
   ];
 

@@ -27,7 +27,8 @@
     "https://www.perplexity.ai/*",
     "https://www.kimi.com/*",
     "https://www.tongyi.com/*",
-    "https://yuanbao.tencent.com/*"
+    "https://yuanbao.tencent.com/*",
+    "https://grok.com/*"
   ],
   "content_scripts": [
     {
@@ -39,7 +40,8 @@
         "https://www.perplexity.ai/*",
         "https://www.kimi.com/*",
         "https://www.tongyi.com/*",
-        "https://yuanbao.tencent.com/*"
+        "https://yuanbao.tencent.com/*",
+        "https://grok.com/*"
       ],
       "js": ["contentScript.js"]
     }

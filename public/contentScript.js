@@ -14,7 +14,8 @@ function initScript() {
   const isKimi = url.hostname.includes('kimi.com');
   const isTongyi = url.hostname.includes('tongyi.com');
   const isYuanbao = url.hostname.includes('yuanbao.tencent.com');
-  if (!isChatGPT && !isDeepSeek && !isGemini && !isDoubao && !isPerplexity && !isKimi && !isTongyi && !isYuanbao) {
+  const isGrok = url.hostname.includes('grok.com');
+  if (!isChatGPT && !isDeepSeek && !isGemini && !isDoubao && !isPerplexity && !isKimi && !isTongyi && !isYuanbao && !isGrok) {
     console.log('ChatAB: 当前网站不在支持列表中');
     return;
   }
@@ -28,6 +29,7 @@ function initScript() {
   else if (isKimi) siteName = 'Kimi';
   else if (isTongyi) siteName = 'Tongyi';
   else if (isYuanbao) siteName = 'Yuanbao';
+  else if (isGrok) siteName = 'Grok';
   console.log('ChatAB: 检测到支持的网站:', siteName);
   
   // 从 storage 获取输入内容
@@ -172,6 +174,34 @@ function initScript() {
         } else {
           console.log('ChatAB: 未找到Yuanbao输入框');
         }
+      } else if (isGrok) {
+        // Grok 输入框选择器 - 基于实际HTML结构
+        console.log('ChatAB: 开始查找Grok输入框');
+        
+        // 调试信息
+        const allTextareas = document.querySelectorAll('textarea');
+        const ariaLabelTextareas = document.querySelectorAll('textarea[aria-label]');
+        
+        console.log('ChatAB: Grok调试信息:', {
+          textareaCount: allTextareas.length,
+          ariaLabelTextareaCount: ariaLabelTextareas.length
+        });
+        
+        // 基于实际HTML结构的选择器优先级
+        chatInput = document.querySelector('textarea[aria-label*="Ask Grok anything"]') ||
+                   document.querySelector('textarea[aria-label*="Ask Grok"]') ||
+                   document.querySelector('textarea[aria-label*="Grok"]') ||
+                   document.querySelector('textarea.w-full.bg-transparent') ||
+                   document.querySelector('textarea[dir="auto"]') ||
+                   document.querySelector('textarea[placeholder*="Ask me anything"]') ||
+                   document.querySelector('textarea[placeholder*="输入"]') ||
+                   document.querySelector('textarea');
+        
+        if (chatInput) {
+          console.log('ChatAB: 找到Grok输入框，类型:', chatInput.tagName, '类名:', chatInput.className);
+        } else {
+          console.log('ChatAB: 未找到Grok输入框');
+        }
       }
       
       if (!chatInput) {
@@ -305,8 +335,8 @@ function initScript() {
       } else {
         console.log('ChatAB: 没有找到输入框');
         
-        // 对于 Perplexity、Kimi、Tongyi 和 Yuanbao，如果没找到输入框，再等待一下再试
-        if (isPerplexity || isKimi || isTongyi || isYuanbao) {
+        // 对于 Perplexity、Kimi、Tongyi、Yuanbao 和 Grok，如果没找到输入框，再等待一下再试
+        if (isPerplexity || isKimi || isTongyi || isYuanbao || isGrok) {
           setTimeout(function() {
             console.log(`ChatAB: ${siteName} 二次尝试查找输入框`);
             let retryInput = null;
@@ -331,6 +361,13 @@ function initScript() {
                           document.querySelector('div.ql-editor[contenteditable="true"]') ||
                           document.querySelector('.ql-editor[contenteditable="true"]') ||
                           document.querySelector('div[contenteditable="true"]');
+            } else if (isGrok) {
+              retryInput = document.querySelector('textarea[aria-label*="Ask Grok anything"]') ||
+                          document.querySelector('textarea[aria-label*="Ask Grok"]') ||
+                          document.querySelector('textarea[aria-label*="Grok"]') ||
+                          document.querySelector('textarea.w-full.bg-transparent') ||
+                          document.querySelector('textarea[dir="auto"]') ||
+                          document.querySelector('textarea');
             }
             
             if (retryInput) {
