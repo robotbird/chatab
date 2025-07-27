@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "ChaTab",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Quickly submit queries to ChatGPT, Gemini, DeepSeek, Perplexity, Doubao, and more — all in one place.",
   "author": "ChaTab",
   "chrome_url_overrides": {
@@ -22,24 +22,24 @@
   "host_permissions": [
     "https://chat.deepseek.com/*",
     "https://chatgpt.com/*",
-    "https://chat.openai.com/*",
     "https://gemini.google.com/*",
     "https://www.doubao.com/*",
     "https://www.perplexity.ai/*",
     "https://www.kimi.com/*",
-    "https://www.tongyi.com/*"
+    "https://www.tongyi.com/*",
+    "https://yuanbao.tencent.com/*"
   ],
   "content_scripts": [
     {
       "matches": [
         "https://chat.deepseek.com/*",
         "https://chatgpt.com/*",
-        "https://chat.openai.com/*",
         "https://gemini.google.com/*",
         "https://www.doubao.com/chat/*",
         "https://www.perplexity.ai/*",
         "https://www.kimi.com/*",
-        "https://www.tongyi.com/*"
+        "https://www.tongyi.com/*",
+        "https://yuanbao.tencent.com/*"
       ],
       "js": ["contentScript.js"]
     }

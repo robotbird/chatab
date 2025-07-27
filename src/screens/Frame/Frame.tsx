@@ -105,6 +105,12 @@ export const Frame = (): JSX.Element => {
       icon:"/logo/tongyi.png",
       url:"https://tongyi.com",
       link:"https://tongyi.com"
+    },{
+      id:"yuanbao",
+      name:"Yuanbao",
+      icon:"/logo/yuanbao.png",
+      url:"https://yuanbao.tencent.com",
+      link:"https://yuanbao.tencent.com"
     }
   ];
 

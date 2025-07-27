@@ -13,8 +13,8 @@ function initScript() {
   const isPerplexity = url.hostname.includes('perplexity.ai');
   const isKimi = url.hostname.includes('kimi.com');
   const isTongyi = url.hostname.includes('tongyi.com');
-  
-  if (!isChatGPT && !isDeepSeek && !isGemini && !isDoubao && !isPerplexity && !isKimi && !isTongyi) {
+  const isYuanbao = url.hostname.includes('yuanbao.tencent.com');
+  if (!isChatGPT && !isDeepSeek && !isGemini && !isDoubao && !isPerplexity && !isKimi && !isTongyi && !isYuanbao) {
     console.log('ChatAB: 当前网站不在支持列表中');
     return;
   }
@@ -27,17 +27,8 @@ function initScript() {
   else if (isPerplexity) siteName = 'Perplexity';
   else if (isKimi) siteName = 'Kimi';
   else if (isTongyi) siteName = 'Tongyi';
+  else if (isYuanbao) siteName = 'Yuanbao';
   console.log('ChatAB: 检测到支持的网站:', siteName);
-  
-  // 对于Tongyi，检查网站加载状态
-  if (isTongyi) {
-    console.log('ChatAB: Tongyi网站状态检查:', {
-      readyState: document.readyState,
-      hasErrors: !!document.querySelector('.error, .warning'),
-      bodyLoaded: !!document.body,
-      timestamp: new Date().toLocaleTimeString()
-    });
-  }
   
   // 从 storage 获取输入内容
   chrome.storage.local.get(['inputValue'], function(result) {
@@ -150,6 +141,37 @@ function initScript() {
         } else {
           console.log('ChatAB: 未找到Tongyi输入框');
         }
+      } else if (isYuanbao) {
+        // Yuanbao 输入框选择器 (Quill 编辑器) - 基于实际HTML结构
+        console.log('ChatAB: 开始查找Yuanbao输入框');
+        
+        // 调试信息
+        const chatInputEditor = document.querySelector('.chat-input-editor');
+        const quillContainers = document.querySelectorAll('.ql-container');
+        const quillEditors = document.querySelectorAll('.ql-editor');
+        const allContentEditables = document.querySelectorAll('div[contenteditable="true"]');
+        
+        console.log('ChatAB: Yuanbao调试信息:', {
+          chatInputEditor: !!chatInputEditor,
+          quillContainerCount: quillContainers.length,
+          quillEditorCount: quillEditors.length,
+          contentEditableCount: allContentEditables.length
+        });
+        
+        // 基于实际HTML结构的选择器优先级
+        chatInput = document.querySelector('.chat-input-editor .ql-editor[contenteditable="true"]') ||
+                   document.querySelector('div.ql-editor[contenteditable="true"][data-placeholder*="Ask me anything"]') ||
+                   document.querySelector('div.ql-editor[contenteditable="true"]') ||
+                   document.querySelector('.ql-editor[contenteditable="true"]') ||
+                   document.querySelector('.chat-input-editor div[contenteditable="true"]') ||
+                   document.querySelector('div[contenteditable="true"][data-placeholder*="Ask"]') ||
+                   document.querySelector('div[contenteditable="true"]');
+        
+        if (chatInput) {
+          console.log('ChatAB: 找到Yuanbao输入框，类型:', chatInput.tagName, '类名:', chatInput.className);
+        } else {
+          console.log('ChatAB: 未找到Yuanbao输入框');
+        }
       }
       
       if (!chatInput) {
@@ -207,6 +229,38 @@ function initScript() {
               ).join('');
               chatInput.innerHTML = formattedText;
             }
+          } else if (isYuanbao && chatInput.classList.contains('ql-editor')) {
+            // Yuanbao 的 Quill 编辑器特殊处理
+            try {
+              console.log(`ChatAB: ${siteName} Quill编辑器特殊处理`);
+              
+              // 先清空内容
+              chatInput.innerHTML = '';
+              
+              // 聚焦编辑器
+              chatInput.focus();
+              
+              // 尝试使用 document.execCommand 插入文本
+              if (document.execCommand) {
+                document.execCommand('insertText', false, inputValue);
+              } else {
+                // 备用方案：使用Quill格式
+                const formattedText = inputValue.split('\n').map(line => 
+                  line ? `<p>${line}</p>` : '<p><br></p>'
+                ).join('');
+                chatInput.innerHTML = formattedText;
+              }
+              
+              // 触发必要的事件
+              ['input', 'change', 'keyup', 'text-change'].forEach(eventType => {
+                const event = new Event(eventType, { bubbles: true, cancelable: true });
+                chatInput.dispatchEvent(event);
+              });
+            } catch (e) {
+              console.log(`ChatAB: ${siteName} Quill特殊处理失败，使用备用方法`, e);
+              // 备用方案：简单的HTML格式
+              chatInput.innerHTML = `<p>${inputValue.replace(/\n/g, '</p><p>')}</p>`;
+            }
           } else {
             // 对于其他 contenteditable 的 div (主要是 Gemini)
             chatInput.innerHTML = inputValue.replace(/\n/g, '<br>');
@@ -251,8 +305,8 @@ function initScript() {
       } else {
         console.log('ChatAB: 没有找到输入框');
         
-        // 对于 Perplexity、Kimi 和 Tongyi，如果没找到输入框，再等待一下再试
-        if (isPerplexity || isKimi || isTongyi) {
+        // 对于 Perplexity、Kimi、Tongyi 和 Yuanbao，如果没找到输入框，再等待一下再试
+        if (isPerplexity || isKimi || isTongyi || isYuanbao) {
           setTimeout(function() {
             console.log(`ChatAB: ${siteName} 二次尝试查找输入框`);
             let retryInput = null;
@@ -272,23 +326,48 @@ function initScript() {
                           document.querySelector('textarea[placeholder*="通义"]') ||
                           document.querySelector('textarea.ant-input') ||
                           document.querySelector('textarea');
+            } else if (isYuanbao) {
+              retryInput = document.querySelector('.chat-input-editor .ql-editor[contenteditable="true"]') ||
+                          document.querySelector('div.ql-editor[contenteditable="true"]') ||
+                          document.querySelector('.ql-editor[contenteditable="true"]') ||
+                          document.querySelector('div[contenteditable="true"]');
             }
             
             if (retryInput) {
               console.log(`ChatAB: ${siteName} 二次尝试找到输入框`);
               retryInput.focus();
               
-              if (document.execCommand) {
-                document.execCommand('insertText', false, inputValue);
+              // 特殊处理Yuanbao的Quill编辑器
+              if (isYuanbao && retryInput.classList.contains('ql-editor')) {
+                console.log(`ChatAB: ${siteName} 二次尝试 - Quill编辑器特殊处理`);
+                if (document.execCommand) {
+                  document.execCommand('insertText', false, inputValue);
+                } else {
+                  const formattedText = inputValue.split('\n').map(line => 
+                    line ? `<p>${line}</p>` : '<p><br></p>'
+                  ).join('');
+                  retryInput.innerHTML = formattedText;
+                }
+                
+                // 触发Quill特定事件
+                ['input', 'change', 'text-change'].forEach(eventType => {
+                  const event = new Event(eventType, { bubbles: true });
+                  retryInput.dispatchEvent(event);
+                });
               } else {
-                retryInput.textContent = inputValue;
+                // 其他编辑器的处理
+                if (document.execCommand) {
+                  document.execCommand('insertText', false, inputValue);
+                } else {
+                  retryInput.textContent = inputValue;
+                }
+                
+                // 触发事件
+                ['input', 'change'].forEach(eventType => {
+                  const event = new Event(eventType, { bubbles: true });
+                  retryInput.dispatchEvent(event);
+                });
               }
-              
-              // 触发事件
-              ['input', 'change'].forEach(eventType => {
-                const event = new Event(eventType, { bubbles: true });
-                retryInput.dispatchEvent(event);
-              });
               
               // 尝试发送
               setTimeout(function() {
