@@ -25,7 +25,8 @@
     "https://chat.openai.com/*",
     "https://gemini.google.com/*",
     "https://www.doubao.com/*",
-    "https://www.perplexity.ai/*"
+    "https://www.perplexity.ai/*",
+    "https://www.kimi.com/*"
   ],
   "content_scripts": [
     {
@@ -35,7 +36,8 @@
         "https://chat.openai.com/*",
         "https://gemini.google.com/*",
         "https://www.doubao.com/chat/*",
-        "https://www.perplexity.ai/*"
+        "https://www.perplexity.ai/*",
+        "https://www.kimi.com/*"
       ],
       "js": ["contentScript.js"]
     }

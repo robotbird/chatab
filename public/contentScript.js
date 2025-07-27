@@ -11,8 +11,9 @@ window.addEventListener('load', function() {
   const isGemini = url.hostname.includes('gemini.google.com');
   const isDoubao = url.hostname.includes('doubao.com');
   const isPerplexity = url.hostname.includes('perplexity.ai');
+  const isKimi = url.hostname.includes('kimi.com');
   
-  if (!isChatGPT && !isDeepSeek && !isGemini && !isDoubao && !isPerplexity) {
+  if (!isChatGPT && !isDeepSeek && !isGemini && !isDoubao && !isPerplexity && !isKimi) {
     console.log('ChatAB: 当前网站不在支持列表中');
     return;
   }
@@ -23,7 +24,7 @@ window.addEventListener('load', function() {
   else if (isGemini) siteName = 'Gemini';
   else if (isDoubao) siteName = 'Doubao';
   else if (isPerplexity) siteName = 'Perplexity';
-  
+  else if (isKimi) siteName = 'Kimi';
   console.log('ChatAB: 检测到支持的网站:', siteName);
   
   // 从 storage 获取输入内容
@@ -77,6 +78,41 @@ window.addEventListener('load', function() {
                    document.querySelector('div[data-lexical-editor="true"]') ||
                    document.querySelector('div[contenteditable="true"][role="textbox"]') ||
                    document.querySelector('div[contenteditable="true"]');
+      } else if (isKimi) {
+        // Kimi 输入框选择器 (Lexical 编辑器) - 添加调试信息
+        console.log('ChatAB: 开始查找Kimi输入框');
+        
+        // 先检查页面上是否有相关元素
+        const chatInputContainer = document.querySelector('.chat-input');
+        const editorContainer = document.querySelector('.chat-input-editor-container');
+        const allContentEditables = document.querySelectorAll('div[contenteditable="true"]');
+        const allLexicalEditors = document.querySelectorAll('div[data-lexical-editor="true"]');
+        
+        console.log('ChatAB: Kimi调试信息:', {
+          chatInputContainer: !!chatInputContainer,
+          editorContainer: !!editorContainer,
+          contentEditableCount: allContentEditables.length,
+          lexicalEditorCount: allLexicalEditors.length
+        });
+        
+        // 尝试多种选择器
+        chatInput = document.querySelector('.chat-input-editor[contenteditable="true"]') ||
+                   document.querySelector('div[data-lexical-editor="true"][role="textbox"]') ||
+                   document.querySelector('.chat-input-editor') ||
+                   document.querySelector('.chat-input div[contenteditable="true"]') ||
+                   document.querySelector('div[contenteditable="true"][data-lexical-editor="true"]') ||
+                   document.querySelector('div[contenteditable="true"][role="textbox"]');
+        
+        if (chatInput) {
+          console.log('ChatAB: 找到Kimi输入框，选择器:', chatInput.className, chatInput.tagName);
+        } else {
+          console.log('ChatAB: 未找到Kimi输入框，尝试通用方法');
+          // 如果还是找不到，尝试最后的通用方法
+          if (allContentEditables.length > 0) {
+            chatInput = allContentEditables[0];
+            console.log('ChatAB: 使用第一个contenteditable元素作为输入框');
+          }
+        }
       }
       
       if (!chatInput) {
@@ -101,9 +137,12 @@ window.addEventListener('load', function() {
           const changeEvent = new Event('change', { bubbles: true });
           chatInput.dispatchEvent(changeEvent);
         } else if (chatInput.getAttribute('contenteditable') === 'true') {
-          if (isPerplexity && (chatInput.getAttribute('data-lexical-editor') === 'true' || chatInput.id === 'ask-input')) {
-            // Perplexity Lexical 编辑器特殊处理
+          if ((isPerplexity && (chatInput.getAttribute('data-lexical-editor') === 'true' || chatInput.id === 'ask-input')) ||
+              (isKimi && chatInput.getAttribute('data-lexical-editor') === 'true')) {
+            // Perplexity 和 Kimi 的 Lexical 编辑器特殊处理
             try {
+              console.log(`ChatAB: ${siteName} Lexical编辑器特殊处理`);
+              
               // 先清空内容
               chatInput.innerHTML = '';
               
@@ -124,8 +163,8 @@ window.addEventListener('load', function() {
                 chatInput.dispatchEvent(event);
               });
             } catch (e) {
-              console.log('ChatAB: Perplexity特殊处理失败，使用备用方法', e);
-              // 备用方案
+              console.log(`ChatAB: ${siteName} Lexical特殊处理失败，使用备用方法`, e);
+              // 备用方案：使用Lexical格式
               const formattedText = inputValue.split('\n').map(line => 
                 `<p dir="ltr"><span data-lexical-text="true">${line || '<br>'}</span></p>`
               ).join('');
@@ -175,17 +214,27 @@ window.addEventListener('load', function() {
       } else {
         console.log('ChatAB: 没有找到输入框');
         
-        // 对于 Perplexity，如果没找到输入框，再等待一下再试
-        if (isPerplexity) {
+        // 对于 Perplexity 和 Kimi，如果没找到输入框，再等待一下再试
+        if (isPerplexity || isKimi) {
           setTimeout(function() {
-            console.log('ChatAB: Perplexity 二次尝试查找输入框');
-            const retryInput = document.querySelector('#ask-input') ||
-                              document.querySelector('div[data-lexical-editor="true"]') ||
-                              document.querySelector('div[contenteditable="true"][role="textbox"]');
+            console.log(`ChatAB: ${siteName} 二次尝试查找输入框`);
+            let retryInput = null;
+            
+            if (isPerplexity) {
+              retryInput = document.querySelector('#ask-input') ||
+                          document.querySelector('div[data-lexical-editor="true"]') ||
+                          document.querySelector('div[contenteditable="true"][role="textbox"]');
+            } else if (isKimi) {
+              retryInput = document.querySelector('.chat-input-editor[contenteditable="true"]') ||
+                          document.querySelector('div[data-lexical-editor="true"][role="textbox"]') ||
+                          document.querySelector('.chat-input div[contenteditable="true"]') ||
+                          document.querySelector('div[contenteditable="true"]');
+            }
             
             if (retryInput) {
-              console.log('ChatAB: 二次尝试找到输入框');
+              console.log(`ChatAB: ${siteName} 二次尝试找到输入框`);
               retryInput.focus();
+              
               if (document.execCommand) {
                 document.execCommand('insertText', false, inputValue);
               } else {
@@ -197,6 +246,27 @@ window.addEventListener('load', function() {
                 const event = new Event(eventType, { bubbles: true });
                 retryInput.dispatchEvent(event);
               });
+              
+              // 尝试发送
+              setTimeout(function() {
+                const enterEvent = new KeyboardEvent('keydown', {
+                  key: 'Enter',
+                  code: 'Enter',
+                  keyCode: 13,
+                  which: 13,
+                  bubbles: true,
+                  cancelable: true
+                });
+                retryInput.dispatchEvent(enterEvent);
+                
+                // 清空storage
+                setTimeout(function() {
+                  chrome.storage.local.remove('inputValue');
+                  console.log(`ChatAB: ${siteName} 二次尝试完成，清空storage`);
+                }, 1000);
+              }, 800);
+            } else {
+              console.log(`ChatAB: ${siteName} 二次尝试仍然没有找到输入框`);
             }
           }, 2000);
         }

@@ -93,6 +93,12 @@ export const Frame = (): JSX.Element => {
       icon: "/logo/perplexity.png",
       url: "https://www.perplexity.ai",
       link: "https://www.perplexity.ai"
+    },{
+      id:"kimi",
+      name:"Kimi",
+      icon:"/logo/kimi.png",
+      url:"https://www.kimi.com",
+      link:"https://www.kimi.com"
     }
   ];
 
