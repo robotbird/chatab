@@ -293,9 +293,9 @@ export const Frame = (): JSX.Element => {
                   </div>
                   {/* 下拉菜单内容，和按钮为兄弟节点 */}
                     <ul
-                      className={`absolute left-0 top-[110%] w-[180px] z-50 rounded-[10px] shadow-md p-1 transition-all duration-200 overflow-hidden
+                      className={`absolute left-0 top-[110%] w-[180px] z-50 rounded-[10px] shadow-md p-1 transition-all duration-200 overflow-y-auto
                         ${isDark ? 'bg-gray-800 border border-gray-700' : 'bg-white'}
-                        ${isModelDropdownOpen ? 'opacity-100 pointer-events-auto translate-y-0 max-h-60' : 'opacity-0 pointer-events-none -translate-y-2 max-h-0'}
+                        ${isModelDropdownOpen ? 'opacity-100 pointer-events-auto translate-y-0 max-h-80' : 'opacity-0 pointer-events-none -translate-y-2 max-h-0'}
                       `}
                       style={{ boxShadow: isModelDropdownOpen ? '0 4px 16px 0 rgba(0,0,0,0.10)' : 'none' }}
                     >
