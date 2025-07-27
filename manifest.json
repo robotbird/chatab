@@ -28,7 +28,8 @@
     "https://www.kimi.com/*",
     "https://www.tongyi.com/*",
     "https://yuanbao.tencent.com/*",
-    "https://grok.com/*"
+    "https://grok.com/*",
+    "https://yiyan.baidu.com/*"
   ],
   "content_scripts": [
     {
@@ -41,7 +42,8 @@
         "https://www.kimi.com/*",
         "https://www.tongyi.com/*",
         "https://yuanbao.tencent.com/*",
-        "https://grok.com/*"
+        "https://grok.com/*",
+        "https://yiyan.baidu.com/*"
       ],
       "js": ["contentScript.js"]
     }

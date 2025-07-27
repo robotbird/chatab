@@ -117,6 +117,12 @@ export const Frame = (): JSX.Element => {
       icon:"/logo/grok.png",
       url:"https://grok.com",
       link:"https://grok.com"
+    },{
+      id:"yiyan",
+      name:"Yiyan",
+      icon:"/logo/yiyan.png",
+      url:"https://yiyan.baidu.com",
+      link:"https://yiyan.baidu.com"
     }
   ];
 
