@@ -26,7 +26,8 @@
     "https://gemini.google.com/*",
     "https://www.doubao.com/*",
     "https://www.perplexity.ai/*",
-    "https://www.kimi.com/*"
+    "https://www.kimi.com/*",
+    "https://www.tongyi.com/*"
   ],
   "content_scripts": [
     {
@@ -37,7 +38,8 @@
         "https://gemini.google.com/*",
         "https://www.doubao.com/chat/*",
         "https://www.perplexity.ai/*",
-        "https://www.kimi.com/*"
+        "https://www.kimi.com/*",
+        "https://www.tongyi.com/*"
       ],
       "js": ["contentScript.js"]
     }

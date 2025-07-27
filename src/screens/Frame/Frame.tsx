@@ -99,6 +99,12 @@ export const Frame = (): JSX.Element => {
       icon:"/logo/kimi.png",
       url:"https://www.kimi.com",
       link:"https://www.kimi.com"
+    },{
+      id:"tongyi",
+      name:"Tongyi",
+      icon:"/logo/tongyi.png",
+      url:"https://tongyi.com",
+      link:"https://tongyi.com"
     }
   ];
 

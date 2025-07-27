@@ -1,19 +1,20 @@
 // ChatAB Extension: Content script for auto-submitting from storage
 console.log('ChatAB Extension: Content script loaded');
 
-// 等待页面加载完成
-window.addEventListener('load', function() {
+// 优化页面加载检测 - 使用多种事件确保脚本能执行
+function initScript() {
   const url = new URL(window.location.href);
   
   // 检查是否是支持的网站
-  const isChatGPT = url.hostname.includes('chatgpt.com') || url.hostname.includes('chat.openai.com');
+  const isChatGPT = url.hostname.includes('chatgpt.com');
   const isDeepSeek = url.hostname.includes('deepseek.com');
   const isGemini = url.hostname.includes('gemini.google.com');
   const isDoubao = url.hostname.includes('doubao.com');
   const isPerplexity = url.hostname.includes('perplexity.ai');
   const isKimi = url.hostname.includes('kimi.com');
+  const isTongyi = url.hostname.includes('tongyi.com');
   
-  if (!isChatGPT && !isDeepSeek && !isGemini && !isDoubao && !isPerplexity && !isKimi) {
+  if (!isChatGPT && !isDeepSeek && !isGemini && !isDoubao && !isPerplexity && !isKimi && !isTongyi) {
     console.log('ChatAB: 当前网站不在支持列表中');
     return;
   }
@@ -25,7 +26,18 @@ window.addEventListener('load', function() {
   else if (isDoubao) siteName = 'Doubao';
   else if (isPerplexity) siteName = 'Perplexity';
   else if (isKimi) siteName = 'Kimi';
+  else if (isTongyi) siteName = 'Tongyi';
   console.log('ChatAB: 检测到支持的网站:', siteName);
+  
+  // 对于Tongyi，检查网站加载状态
+  if (isTongyi) {
+    console.log('ChatAB: Tongyi网站状态检查:', {
+      readyState: document.readyState,
+      hasErrors: !!document.querySelector('.error, .warning'),
+      bodyLoaded: !!document.body,
+      timestamp: new Date().toLocaleTimeString()
+    });
+  }
   
   // 从 storage 获取输入内容
   chrome.storage.local.get(['inputValue'], function(result) {
@@ -39,7 +51,7 @@ window.addEventListener('load', function() {
     console.log('ChatAB: 从 storage 获取到内容:', inputValue.substring(0, 50) + '...');
     
     // 根据网站调整延迟时间
-    const delay = isPerplexity ? 3000 : 2000; // Perplexity 需要更长时间加载 Lexical 编辑器
+    const delay = isTongyi ? 5000 : 2000; // Tongyi 需要更长时间因为网站有加载问题 
     
     // 延迟执行，确保页面完全加载
     setTimeout(function() {
@@ -112,6 +124,31 @@ window.addEventListener('load', function() {
             chatInput = allContentEditables[0];
             console.log('ChatAB: 使用第一个contenteditable元素作为输入框');
           }
+        }
+      } else if (isTongyi) {
+        // Tongyi 输入框选择器 - 基于实际HTML结构
+        console.log('ChatAB: 开始查找Tongyi输入框');
+        
+        // 调试信息
+        const allTextareas = document.querySelectorAll('textarea');
+        const antInputs = document.querySelectorAll('textarea.ant-input');
+        console.log('ChatAB: Tongyi调试信息:', {
+          textareaCount: allTextareas.length,
+          antInputCount: antInputs.length
+        });
+        
+        chatInput = document.querySelector('textarea[placeholder*="遇事不决问通义"]') ||
+                   document.querySelector('textarea.ant-input[maxlength="10000"]') ||
+                   document.querySelector('textarea[placeholder*="通义"]') ||
+                   document.querySelector('textarea.ant-input') ||
+                   document.querySelector('textarea[placeholder*="请输入"]') ||
+                   document.querySelector('textarea[placeholder*="输入"]') ||
+                   document.querySelector('textarea');
+        
+        if (chatInput) {
+          console.log('ChatAB: 找到Tongyi输入框，类型:', chatInput.tagName, '类名:', chatInput.className);
+        } else {
+          console.log('ChatAB: 未找到Tongyi输入框');
         }
       }
       
@@ -214,8 +251,8 @@ window.addEventListener('load', function() {
       } else {
         console.log('ChatAB: 没有找到输入框');
         
-        // 对于 Perplexity 和 Kimi，如果没找到输入框，再等待一下再试
-        if (isPerplexity || isKimi) {
+        // 对于 Perplexity、Kimi 和 Tongyi，如果没找到输入框，再等待一下再试
+        if (isPerplexity || isKimi || isTongyi) {
           setTimeout(function() {
             console.log(`ChatAB: ${siteName} 二次尝试查找输入框`);
             let retryInput = null;
@@ -229,6 +266,12 @@ window.addEventListener('load', function() {
                           document.querySelector('div[data-lexical-editor="true"][role="textbox"]') ||
                           document.querySelector('.chat-input div[contenteditable="true"]') ||
                           document.querySelector('div[contenteditable="true"]');
+            } else if (isTongyi) {
+              retryInput = document.querySelector('textarea[placeholder*="遇事不决问通义"]') ||
+                          document.querySelector('textarea.ant-input[maxlength="10000"]') ||
+                          document.querySelector('textarea[placeholder*="通义"]') ||
+                          document.querySelector('textarea.ant-input') ||
+                          document.querySelector('textarea');
             }
             
             if (retryInput) {
@@ -271,9 +314,46 @@ window.addEventListener('load', function() {
           }, 2000);
         }
       }
-    }, delay); // 使用动态延迟时间
+    }, delay);
   });
+}
+
+// 多种方式确保脚本能够执行
+let scriptExecuted = false;
+
+// 1. DOMContentLoaded - 比load事件更早触发
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', function() {
+    if (!scriptExecuted) {
+      scriptExecuted = true;
+      console.log('ChatAB: 通过DOMContentLoaded启动');
+      initScript();
+    }
+  });
+} else {
+  // 2. 文档已经加载完成，直接执行
+  console.log('ChatAB: 文档已加载，直接启动');
+  scriptExecuted = true;
+  initScript();
+}
+
+// 3. 备用方案 - window.load事件
+window.addEventListener('load', function() {
+  if (!scriptExecuted) {
+    scriptExecuted = true;
+    console.log('ChatAB: 通过window.load启动');
+    initScript();
+  }
 });
+
+// 4. 最后的备用方案 - 延迟执行
+setTimeout(function() {
+  if (!scriptExecuted) {
+    scriptExecuted = true;
+    console.log('ChatAB: 通过延迟方案启动');
+    initScript();
+  }
+}, 3000); // 3秒后强制执行
 
 // 监听从扩展发来的消息（如果需要的话）
 chrome.runtime.onMessage.addListener(function(message, sender, sendResponse) {
