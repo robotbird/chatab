@@ -1,14 +1,8 @@
-import { ArrowUpCircleIcon, ChevronDown, Sun, Moon } from "lucide-react";
+import { ChevronDown, Sun, Moon } from "lucide-react";
 import React, { useState, useEffect, useRef } from "react";
 import { Card, CardContent } from "../../components/ui/card";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "../../components/ui/select";
 import { IconLink } from "../../components/ui/IconLink";
+import { SendIcon } from "../../components/ui/SendIcon";
 
 declare global {
   interface Window {
@@ -317,7 +311,14 @@ export const Frame = (): JSX.Element => {
                   onClick={handleSend}
                   className="cursor-pointer"
                 >
-                  <ArrowUpCircleIcon className={`w-8 h-8 ${isDark ? 'text-gray-400 hover:text-gray-300' : 'text-gray-400 hover:text-gray-500'}`} />
+                  <SendIcon 
+                    size={32}
+                    className={`transition-all duration-200 hover:opacity-80 ${
+                      inputValue.trim() 
+                        ? (isDark ? 'text-white hover:text-gray-200' : 'text-black hover:text-gray-800')
+                        : (isDark ? 'text-gray-500 hover:text-gray-400' : 'text-gray-400 hover:text-gray-500')
+                    }`} 
+                  />
                 </button>
               </div>
             </div>
