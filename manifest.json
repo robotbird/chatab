@@ -20,6 +20,9 @@
     "storage"
   ],
   "host_permissions": [
+    "https://*.bing.com/*",
+    "https://*.cn.bing.com/*",
+    "https://images.unsplash.com/*",
     "https://chat.deepseek.com/*",
     "https://chatgpt.com/*",
     "https://gemini.google.com/*",

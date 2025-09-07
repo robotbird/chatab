@@ -11,6 +11,7 @@ import {
   getRecentModels,
   setRecentModels 
 } from "../../lib/models";
+import { wallpaperService } from "../../lib/wallpaperService";
 
 declare global {
   interface Window {
@@ -176,6 +177,32 @@ export const Frame = (): JSX.Element => {
   useEffect(() => {
     loadModels();
   }, []);
+
+  // 初始化壁纸服务
+  useEffect(() => {
+    const initWallpaper = async () => {
+      try {
+        await wallpaperService.initialize();
+      } catch (error) {
+        console.error('Failed to initialize wallpaper service:', error);
+      }
+    };
+
+    initWallpaper();
+
+    // 设置定期检查壁纸更新（每分钟检查一次）
+    const wallpaperInterval = setInterval(async () => {
+      try {
+        await wallpaperService.autoUpdateWallpaper();
+      } catch (error) {
+        console.error('Failed to auto update wallpaper:', error);
+      }
+    }, 60000); // 每分钟检查一次
+
+    return () => {
+      clearInterval(wallpaperInterval);
+    };
+  }, []);
   
   // 处理发送功能
   const handleSend = () => {
@@ -233,7 +260,7 @@ export const Frame = (): JSX.Element => {
   };
 
   return (
-    <div className={`transition-colors duration-200 ${isDark ? 'bg-gray-900' : 'bg-transparent'} flex flex-col items-center justify-center w-full min-h-screen`}>
+    <div className={`transition-colors duration-200 bg-transparent flex flex-col items-center justify-center w-full min-h-screen`}>
       <div className="w-full max-w-[800px] mx-auto relative">
  
         

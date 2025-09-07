@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { X, Palette, Image, Grid3X3 } from 'lucide-react';
+import { X, Palette, Grid3X3 } from 'lucide-react';
 import { Switch } from './switch';
+import { WallpaperSection } from './WallpaperSection';
 import { originalModels, getAppToggleStates, setAppToggleStates, AppToggleState } from '../../lib/models';
 
 interface SettingsPanelProps {
@@ -19,15 +20,7 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
   onAppToggleChange
 }) => {
   const [selectedTheme, setSelectedTheme] = useState<'light' | 'dark' | 'auto'>('auto');
-  const [selectedWallpaper, setSelectedWallpaper] = useState('wallpaper1');
   const [appToggleStates, setAppToggleStatesLocal] = useState<AppToggleState>({});
-
-  const wallpapers = [
-    { id: 'wallpaper1', preview: 'bg-gradient-to-br from-blue-400 to-purple-600' },
-    { id: 'wallpaper2', preview: 'bg-gradient-to-br from-green-400 to-blue-500' },
-    { id: 'wallpaper3', preview: 'bg-gradient-to-br from-pink-400 to-red-500' },
-    { id: 'wallpaper4', preview: 'bg-gradient-to-br from-yellow-400 to-orange-500' }
-  ];
 
   const themes = [
     { id: 'light', name: '浅色', icon: '☀️' },
@@ -38,10 +31,8 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
   useEffect(() => {
     // Load saved settings from localStorage
     const savedTheme = localStorage.getItem('theme') as 'light' | 'dark' | 'auto';
-    const savedWallpaper = localStorage.getItem('wallpaper');
     
     if (savedTheme) setSelectedTheme(savedTheme);
-    if (savedWallpaper) setSelectedWallpaper(savedWallpaper);
     
     // 加载应用开关状态
     setAppToggleStatesLocal(getAppToggleStates());
@@ -53,10 +44,6 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
     onThemeChange(theme);
   };
 
-  const handleWallpaperChange = (wallpaperId: string) => {
-    setSelectedWallpaper(wallpaperId);
-    localStorage.setItem('wallpaper', wallpaperId);
-  };
 
   const handleAppToggle = (appId: string) => {
     const newStates = {
@@ -131,36 +118,7 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
             </div>
 
             {/* Wallpaper Section */}
-            <div>
-              <div className="flex items-center gap-2 mb-3">
-                <Image className="w-4 h-4" />
-                <h3 className="text-sm font-medium">壁纸</h3>
-              </div>
-              <div className="grid grid-cols-2 gap-2">
-                {wallpapers.map((wallpaper) => (
-                  <button
-                    key={wallpaper.id}
-                    onClick={() => handleWallpaperChange(wallpaper.id)}
-                    className={`relative h-16 rounded-lg border-2 transition-all ${
-                      selectedWallpaper === wallpaper.id
-                        ? 'border-blue-500'
-                        : isDark
-                        ? 'border-gray-600 hover:border-gray-500'
-                        : 'border-gray-200 hover:border-gray-300'
-                    }`}
-                  >
-                    <div className={`w-full h-full rounded-md ${wallpaper.preview}`} />
-                    {selectedWallpaper === wallpaper.id && (
-                      <div className="absolute inset-0 bg-black bg-opacity-20 rounded-md flex items-center justify-center">
-                        <div className="w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center">
-                          <div className="w-2 h-2 bg-white rounded-full" />
-                        </div>
-                      </div>
-                    )}
-                  </button>
-                ))}
-              </div>
-            </div>
+            <WallpaperSection isDark={isDark} />
 
             {/* Applications Section */}
             <div>
