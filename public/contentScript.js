@@ -1,7 +1,3 @@
-// ChatAB Extension: Content script for auto-submitting from storage
-console.log('ChatAB Extension: Content script loaded');
-console.log('ChatAB: 当前页面URL:', window.location.href);
-console.log('ChatAB: 当前页面hostname:', window.location.hostname);
 
 // 优化页面加载检测 - 使用多种事件确保脚本能执行
 function initScript() {
@@ -72,7 +68,7 @@ function initScript() {
       return;
     }
     
-    console.log('ChatAB: 从 storage 获取到内容:', inputValue.substring(0, 50) + '...');
+    console.log('ChatAB: 从 storage 获取到内容:', inputValue ? inputValue.substring(0, 50) + '...' : '无文本');
     
     // 根据网站调整延迟时间
     const delay = (isTongyi || isYiyan || isYuanbao) ? 5000 : 2000; // Tongyi、Yiyan 和 Yuanbao 需要更长时间因为网站有加载问题 
@@ -102,9 +98,10 @@ function initScript() {
                    document.querySelector('textarea[placeholder*="Enter a prompt"]') ||
                    document.querySelector('textarea');
       } else if (isDoubao) {
-        // Doubao 输入框选择器
+        // Doubao 输入框选择器 - 基于最新HTML结构
         chatInput = document.querySelector('textarea[data-testid="chat_input_input"]') ||
-                   document.querySelector('textarea[placeholder*="请输入"]') ||
+                   document.querySelector('textarea.semi-input-textarea') ||
+                   document.querySelector('textarea[placeholder*="发消息"]') ||
                    document.querySelector('textarea[placeholder*="输入"]') ||
                    document.querySelector('div[contenteditable="true"]') ||
                    document.querySelector('textarea');
@@ -376,19 +373,544 @@ function initScript() {
                    document.querySelector('input[type="text"]');
       }
       
+
+
+      
       if (chatInput) {
-        console.log('ChatAB: 找到输入框，开始填充内容');
+        console.log('ChatAB: 找到输入框，开始处理内容');
         
-        // 填充内容
+        // ChatGPT专用发送函数
+        async function sendChatGPTMessage() {
+          console.log('ChatAB: 开始ChatGPT专用发送流程');
+          
+          // 获取ChatGPT输入框内容的函数
+          function getChatGPTInputText() {
+            if (chatInput.value !== undefined) {
+              return chatInput.value; // textarea
+            } else if (chatInput.textContent !== undefined) {
+              return chatInput.textContent; // contenteditable div
+            } else if (chatInput.innerText !== undefined) {
+              return chatInput.innerText; // 其他元素
+            } else {
+              return '';
+            }
+          }
+          
+          // 记录发送前的文本内容用于检查发送是否成功
+          const beforeSendText = getChatGPTInputText();
+          console.log('ChatAB: 发送前文本内容长度:', beforeSendText.length);
+          console.log('ChatAB: 发送前文本内容预览:', beforeSendText.substring(0, 100) + '...');
+          
+          let retryCount = 0;
+          const maxRetries = 5;
+          
+          async function attemptSend() {
+            retryCount++;
+            console.log(`ChatAB: ChatGPT发送尝试 ${retryCount}/${maxRetries}`);
+            
+            try {
+              // 确保输入框处于焦点状态
+              chatInput.focus();
+              
+              // 等待一下确保焦点已设置
+              await new Promise(resolve => setTimeout(resolve, 200));
+              
+              // 触发keydown事件
+              const keydownEvent = new KeyboardEvent('keydown', {
+                key: 'Enter',
+                code: 'Enter',
+                keyCode: 13,
+                which: 13,
+                bubbles: true,
+                cancelable: true
+              });
+              chatInput.dispatchEvent(keydownEvent);
+              
+              // 触发keypress事件
+              const keypressEvent = new KeyboardEvent('keypress', {
+                key: 'Enter',
+                code: 'Enter',
+                keyCode: 13,
+                which: 13,
+                bubbles: true,
+                cancelable: true
+              });
+              chatInput.dispatchEvent(keypressEvent);
+              
+              // 触发keyup事件
+              const keyupEvent = new KeyboardEvent('keyup', {
+                key: 'Enter',
+                code: 'Enter',
+                keyCode: 13,
+                which: 13,
+                bubbles: true,
+                cancelable: true
+              });
+              chatInput.dispatchEvent(keyupEvent);
+              
+              console.log('ChatAB: ChatGPT回车键事件已触发');
+              
+              // 等待页面响应
+              await new Promise(resolve => setTimeout(resolve, 1500));
+              
+              // 检查文本框是否清空（判断发送是否成功）
+              const afterSendText = getChatGPTInputText();
+              console.log('ChatAB: 发送后文本内容长度:', afterSendText.length);
+              console.log('ChatAB: 发送后文本内容预览:', afterSendText.substring(0, 50) + '...');
+              
+              // 检查发送是否成功的条件：
+              // 1. 文本框完全清空，或者
+              // 2. 文本内容明显减少（可能是部分发送成功）
+              const textCleared = afterSendText.length === 0 || afterSendText.trim() === '';
+              const textReduced = afterSendText.length < beforeSendText.length * 0.8; // 内容减少了80%以上
+              
+              if (textCleared || textReduced) {
+                console.log('ChatAB: ChatGPT发送成功，文本框已清空或内容明显减少');
+                
+                // 发送成功后清空 storage
+                setTimeout(function() {
+                  chrome.storage.local.remove(['inputValue']);
+                  console.log('ChatAB: ChatGPT通过回车键发送成功，清空 storage');
+                }, 1000);
+                
+                return true; // 发送成功
+              } else {
+                console.log('ChatAB: ChatGPT发送可能失败，文本框仍有内容');
+                
+                // 如果还有重试次数，继续尝试
+                if (retryCount < maxRetries) {
+                  console.log(`ChatAB: 准备重试发送，剩余重试次数: ${maxRetries - retryCount}`);
+                  await new Promise(resolve => setTimeout(resolve, 1000));
+                  return await attemptSend();
+                } else {
+                  console.log('ChatAB: ChatGPT发送失败，已达最大重试次数');
+                  return false;
+                }
+              }
+              
+            } catch (e) {
+              console.log(`ChatAB: ChatGPT发送尝试${retryCount}失败:`, e);
+              
+              if (retryCount < maxRetries) {
+                await new Promise(resolve => setTimeout(resolve, 1000));
+                return await attemptSend();
+              } else {
+                return false;
+              }
+            }
+          }
+          
+          const sendResult = await attemptSend();
+          if (!sendResult) {
+            console.log('ChatAB: ChatGPT发送最终失败，尝试备用方案');
+            // 这里可以添加备用发送方案，比如点击发送按钮
+            try {
+              const sendButton = document.querySelector('[data-testid="send-button"]') || 
+                               document.querySelector('button[aria-label*="Send"]') ||
+                               document.querySelector('button[title*="Send"]');
+              if (sendButton && !sendButton.disabled) {
+                console.log('ChatAB: 尝试点击ChatGPT发送按钮作为备用方案');
+                sendButton.click();
+                
+                // 等待并检查发送结果
+                await new Promise(resolve => setTimeout(resolve, 1500));
+                const finalText = getChatGPTInputText();
+                console.log('ChatAB: 备用方案发送后文本内容长度:', finalText.length);
+                if (finalText.length === 0 || finalText.trim() === '') {
+                  console.log('ChatAB: ChatGPT备用方案发送成功');
+                  setTimeout(function() {
+                    chrome.storage.local.remove(['inputValue']);
+                    console.log('ChatAB: ChatGPT通过备用方案发送成功，清空 storage');
+                  }, 1000);
+                }
+              }
+            } catch (backupError) {
+              console.log('ChatAB: ChatGPT备用发送方案也失败:', backupError);
+            }
+          }
+        }
+        
+        // Doubao专用发送函数
+        async function sendDoubaoMessage() {
+          console.log('ChatAB: 开始Doubao专用发送流程');
+          
+          // 获取Doubao输入框内容的函数
+          function getDoubaoInputText() {
+            if (chatInput.value !== undefined) {
+              return chatInput.value; // textarea
+            } else if (chatInput.textContent !== undefined) {
+              return chatInput.textContent; // contenteditable div
+            } else if (chatInput.innerText !== undefined) {
+              return chatInput.innerText; // 其他元素
+            } else {
+              return '';
+            }
+          }
+          
+          // 检查输入框内容
+          const beforeSendText = getDoubaoInputText();
+          console.log('ChatAB: Doubao发送前文本内容长度:', beforeSendText.length);
+          console.log('ChatAB: Doubao发送前文本内容预览:', beforeSendText.substring(0, 100) + '...');
+          
+          // 如果没有文本内容，不发送
+          if (!beforeSendText || beforeSendText.trim() === '') {
+            console.log('ChatAB: Doubao没有文本内容，跳过发送');
+            return false;
+          }
+          
+          let retryCount = 0;
+          const maxRetries = 5;
+          
+          async function attemptSend() {
+            retryCount++;
+            console.log(`ChatAB: Doubao发送尝试 ${retryCount}/${maxRetries}`);
+            
+            try {
+              // 确保输入框处于焦点状态
+              chatInput.focus();
+              
+              // 等待一下确保焦点已设置
+              await new Promise(resolve => setTimeout(resolve, 200));
+              
+              // 优先尝试回车键发送（类似ChatGPT）
+              console.log('ChatAB: Doubao优先尝试回车键发送');
+              
+              // 触发keydown事件
+              const keydownEvent = new KeyboardEvent('keydown', {
+                key: 'Enter',
+                code: 'Enter',
+                keyCode: 13,
+                which: 13,
+                bubbles: true,
+                cancelable: true
+              });
+              chatInput.dispatchEvent(keydownEvent);
+              
+              // 触发keypress事件
+              const keypressEvent = new KeyboardEvent('keypress', {
+                key: 'Enter',
+                code: 'Enter',
+                keyCode: 13,
+                which: 13,
+                bubbles: true,
+                cancelable: true
+              });
+              chatInput.dispatchEvent(keypressEvent);
+              
+              // 触发keyup事件
+              const keyupEvent = new KeyboardEvent('keyup', {
+                key: 'Enter',
+                code: 'Enter',
+                keyCode: 13,
+                which: 13,
+                bubbles: true,
+                cancelable: true
+              });
+              chatInput.dispatchEvent(keyupEvent);
+              
+              console.log('ChatAB: Doubao回车键事件已触发');
+              
+              // 等待页面响应
+              await new Promise(resolve => setTimeout(resolve, 2000));
+              
+              // 检查文本框是否清空（判断发送是否成功）
+              const afterSendText = getDoubaoInputText();
+              console.log('ChatAB: Doubao回车发送后文本内容长度:', afterSendText.length);
+              console.log('ChatAB: Doubao回车发送后文本内容预览:', afterSendText.substring(0, 50) + '...');
+              
+              // 检查发送是否成功的条件：
+              // 1. 文本框完全清空，或者
+              // 2. 文本内容明显减少（可能是部分发送成功）
+              const textCleared = afterSendText.length === 0 || afterSendText.trim() === '';
+              const textReduced = afterSendText.length < beforeSendText.length * 0.8; // 内容减少了80%以上
+              
+              if (textCleared || textReduced) {
+                console.log('ChatAB: Doubao回车发送成功，文本框已清空或内容明显减少');
+                
+                // 发送成功后清空 storage
+                setTimeout(function() {
+                  chrome.storage.local.remove(['inputValue']);
+                  console.log('ChatAB: Doubao通过回车键发送成功，清空 storage');
+                }, 1000);
+                
+                return true; // 发送成功
+              } else {
+                console.log('ChatAB: Doubao回车发送可能失败，尝试按钮发送作为备用方案');
+                
+                // 回车发送失败，尝试按钮发送作为备用方案
+                const doubaoSendButton = document.querySelector('button[data-testid="chat_input_send_button"]');
+                const sendButtons = [
+                  doubaoSendButton,
+                  ...document.querySelectorAll('[data-testid*="send"], [aria-label*="发送"], [aria-label*="Send"], [title*="发送"], [title*="Send"]'),
+                  ...document.querySelectorAll('button[type="submit"], .send-btn, .submit-btn'),
+                  ...document.querySelectorAll('button:has(svg), button[class*="send"], button[class*="submit"]'),
+                  ...document.querySelectorAll('[role="button"][aria-label*="发送"], [role="button"][aria-label*="Send"]')
+                ].filter(Boolean);
+                
+                console.log(`ChatAB: Doubao找到发送按钮数量: ${sendButtons.length}`);
+                
+                // 查找可用的发送按钮
+                let availableButton = null;
+                for (let i = 0; i < Math.min(sendButtons.length, 5); i++) {
+                  const btn = sendButtons[i];
+                  const isDisabled = btn.disabled || 
+                                   btn.hasAttribute('disabled') || 
+                                   btn.classList.contains('disabled') ||
+                                   btn.getAttribute('aria-disabled') === 'true' ||
+                                   window.getComputedStyle(btn).pointerEvents === 'none';
+                  
+                  if (!isDisabled) {
+                    availableButton = btn;
+                    console.log(`ChatAB: Doubao找到可用发送按钮${i + 1}`);
+                    break;
+                  }
+                }
+                
+                if (availableButton) {
+                  console.log('ChatAB: Doubao点击发送按钮作为备用方案');
+                  availableButton.click();
+                  
+                  // 等待页面响应
+                  await new Promise(resolve => setTimeout(resolve, 2000));
+                  
+                  // 检查按钮发送结果
+                  const afterButtonSendText = getDoubaoInputText();
+                  console.log('ChatAB: Doubao按钮发送后文本内容长度:', afterButtonSendText.length);
+                  
+                  const buttonTextCleared = afterButtonSendText.length === 0 || afterButtonSendText.trim() === '';
+                  const buttonTextReduced = afterButtonSendText.length < beforeSendText.length * 0.8;
+                  
+                  if (buttonTextCleared || buttonTextReduced) {
+                    console.log('ChatAB: Doubao按钮发送成功');
+                    setTimeout(function() {
+                      chrome.storage.local.remove(['inputValue']);
+                      console.log('ChatAB: Doubao通过按钮发送成功，清空 storage');
+                    }, 1000);
+                    return true;
+                  }
+                }
+                
+                // 如果还有重试次数，继续尝试
+                if (retryCount < maxRetries) {
+                  console.log(`ChatAB: Doubao准备重试发送，剩余重试次数: ${maxRetries - retryCount}`);
+                  await new Promise(resolve => setTimeout(resolve, 1500));
+                  return await attemptSend();
+                } else {
+                  console.log('ChatAB: Doubao发送失败，已达最大重试次数');
+                  return false;
+                }
+              }
+              
+            } catch (e) {
+              console.log(`ChatAB: Doubao发送尝试${retryCount}失败:`, e);
+              
+              if (retryCount < maxRetries) {
+                await new Promise(resolve => setTimeout(resolve, 1500));
+                return await attemptSend();
+              } else {
+                return false;
+              }
+            }
+          }
+          
+          const sendResult = await attemptSend();
+          if (!sendResult) {
+            console.log('ChatAB: Doubao发送最终失败');
+          }
+        }
+        
+        // 发送函数 - 提前定义确保作用域正确
+        async function sendMessage() {
+          console.log(`ChatAB: ${siteName} 开始尝试发送消息`);
+          
+          // 聚焦输入框
+          chatInput.focus();
+          
+          // 等待一下再尝试发送
+          setTimeout(async function() {
+            // 对于ChatGPT，优先使用回车键发送
+            if (isChatGPT) {
+              console.log('ChatAB: ChatGPT使用回车键发送');
+              await sendChatGPTMessage();
+              return; // ChatGPT处理完成，退出
+            }
+            
+            // 对于Doubao，使用专用的发送逻辑
+            if (isDoubao) {
+              console.log('ChatAB: Doubao使用专用发送逻辑');
+              await sendDoubaoMessage();
+              return; // Doubao处理完成，退出
+            }
+            
+            // 其他网站使用原有的按钮点击逻辑
+            // 方法1: 查找并点击发送按钮（优先）
+            const doubaoSendButton = document.querySelector('button[data-testid="chat_input_send_button"]');
+            const sendButtons = [
+              doubaoSendButton,
+              ...document.querySelectorAll('[data-testid*="send"], [aria-label*="发送"], [aria-label*="Send"], [title*="发送"], [title*="Send"]'),
+              ...document.querySelectorAll('button[type="submit"], .send-btn, .submit-btn'),
+              ...document.querySelectorAll('button:has(svg), button[class*="send"], button[class*="submit"]'),
+              ...document.querySelectorAll('[role="button"][aria-label*="发送"], [role="button"][aria-label*="Send"]')
+            ].filter(Boolean);
+            
+            console.log(`ChatAB: ${siteName} 找到发送按钮数量:`, sendButtons.length);
+            
+            if (sendButtons.length > 0) {
+              // 检查发送按钮状态并等待可用
+              let availableButton = null;
+              
+              for (let waitTime = 0; waitTime < 10; waitTime++) {
+                for (let i = 0; i < Math.min(sendButtons.length, 5); i++) {
+                  const btn = sendButtons[i];
+                  const isDisabled = btn.disabled || 
+                                   btn.getAttribute('aria-disabled') === 'true' ||
+                                   btn.classList.contains('disabled') || 
+                                   btn.classList.contains('semi-button-disabled') ||
+                                   btn.classList.contains('semi-button-primary-disabled');
+                  
+                  console.log(`ChatAB: ${siteName} 检查第${i + 1}个发送按钮(等待${waitTime}次):`, {
+                    tagName: btn.tagName,
+                    disabled: btn.disabled,
+                    className: btn.className,
+                    isVisible: btn.offsetParent !== null,
+                    isDisabled
+                  });
+                  
+                  if (!isDisabled && btn.offsetParent !== null) {
+                    availableButton = btn;
+                    console.log(`ChatAB: ${siteName} 找到可用发送按钮:`, btn.className);
+                    break;
+                  }
+                }
+                
+                if (availableButton) break;
+                
+                // 如果所有按钮都被禁用，等待一下并重新触发状态更新
+                console.log(`ChatAB: ${siteName} 所有发送按钮都被禁用，等待页面状态更新...`);
+                
+                // 重新聚焦输入框，触发状态更新
+                if (chatInput) {
+                  chatInput.focus();
+                  chatInput.blur();
+                  chatInput.focus();
+                  
+                  // 触发额外的事件来更新页面状态
+                  ['input', 'change', 'keyup'].forEach(eventType => {
+                    const event = new Event(eventType, { bubbles: true });
+                    chatInput.dispatchEvent(event);
+                  });
+                }
+                
+                await new Promise(resolve => setTimeout(resolve, 800));
+              }
+              
+              if (availableButton) {
+                try {
+                  availableButton.click();
+                  console.log(`ChatAB: ${siteName} 点击发送按钮成功`);
+                  
+                  // 发送成功后清空 storage
+                  setTimeout(function() {
+                    chrome.storage.local.remove(['inputValue']);
+                    console.log('ChatAB: 通过按钮发送成功，清空 storage');
+                  }, 1000);
+                  return; // 成功发送，退出
+                } catch (e) {
+                  console.log(`ChatAB: ${siteName} 点击可用按钮失败:`, e);
+                }
+              } else {
+                console.log(`ChatAB: ${siteName} 等待后仍无可用发送按钮，继续尝试键盘发送`);
+              }
+            }
+            
+            // 方法2: 使用键盘事件（备用）
+            console.log(`ChatAB: ${siteName} 按钮发送失败，尝试键盘发送`);
+            
+            try {
+              // 先触发keydown事件
+              const keydownEvent = new KeyboardEvent('keydown', {
+                key: 'Enter',
+                code: 'Enter',
+                keyCode: 13,
+                which: 13,
+                bubbles: true,
+                cancelable: true
+              });
+              chatInput.dispatchEvent(keydownEvent);
+              
+              console.log(`ChatAB: ${siteName} 键盘事件发送完成`);
+              
+              // 发送成功后清空 storage
+              setTimeout(function() {
+                chrome.storage.local.remove(['inputValue']);
+                console.log('ChatAB: 通过键盘发送完成，清空 storage');
+              }, 1000);
+              
+            } catch (e) {
+              console.log(`ChatAB: ${siteName} 键盘事件失败:`, e);
+            }
+          }, 800);
+        }
+        
+        // 直接填充文本内容并发送
+        fillTextContent().then(() => {
+          setTimeout(() => sendMessage(), 1000);
+        });
+        
+        async function fillTextContent() {
+          // 如果没有文本内容，直接返回
+          if (!inputValue || !inputValue.trim()) {
+            console.log('ChatAB: 没有文本内容');
+            return;
+          }
+          
+          console.log('ChatAB: 开始填充文本内容:', inputValue.substring(0, 50) + '...');
+          
+          // 填充内容 - 使用更真实的方式
         if (chatInput.tagName.toLowerCase() === 'textarea' || chatInput.tagName.toLowerCase() === 'input') {
-          chatInput.value = inputValue;
+            // 先清空内容
+            chatInput.value = '';
+            
+            // 聚焦输入框
+            chatInput.focus();
+            
+            // 模拟真实的输入过程
+            for (let i = 0; i < inputValue.length; i++) {
+              chatInput.value += inputValue[i];
+              
           // 触发输入事件
-          const inputEvent = new Event('input', { bubbles: true });
+              const inputEvent = new Event('input', { bubbles: true, cancelable: true });
+              Object.defineProperty(inputEvent, 'target', { value: chatInput });
+              Object.defineProperty(inputEvent, 'data', { value: inputValue[i] });
           chatInput.dispatchEvent(inputEvent);
           
-          // 触发 change 事件
-          const changeEvent = new Event('change', { bubbles: true });
-          chatInput.dispatchEvent(changeEvent);
+              // 每10个字符暂停一下，模拟真实输入
+              if (i % 10 === 0) {
+                await new Promise(resolve => setTimeout(resolve, 10));
+              }
+            }
+            
+            // 最后触发完整的事件序列
+            const events = [
+              'input',
+              'change', 
+              'keyup',
+              'compositionend'
+            ];
+            
+            for (const eventType of events) {
+              const event = new Event(eventType, { bubbles: true, cancelable: true });
+              Object.defineProperty(event, 'target', { value: chatInput });
+              chatInput.dispatchEvent(event);
+              await new Promise(resolve => setTimeout(resolve, 50));
+            }
+            
+            // 尝试触发React的状态更新
+            if (chatInput._valueTracker) {
+              chatInput._valueTracker.setValue(inputValue);
+            }
+            
+            console.log('ChatAB: 文本内容填充完成');
         } else if (chatInput.getAttribute('contenteditable') === 'true') {
           if ((isPerplexity && (chatInput.getAttribute('data-lexical-editor') === 'true' || chatInput.id === 'ask-input')) ||
               (isKimi && chatInput.getAttribute('data-lexical-editor') === 'true') ||
@@ -464,39 +986,7 @@ function initScript() {
             chatInput.dispatchEvent(inputEvent);
           }
         }
-        
-        // 聚焦输入框
-        chatInput.focus();
-        
-        // 等待一下再尝试发送 - 统一使用回车键发送
-        setTimeout(function() {
-          console.log(`ChatAB: ${siteName} 使用回车键发送`);
-          
-          try {
-            // 模拟回车键按下（现代浏览器通常只需要 keydown 事件）
-            const enterEvent = new KeyboardEvent('keydown', {
-              key: 'Enter',
-              code: 'Enter',
-              keyCode: 13,
-              which: 13,
-              bubbles: true,
-              cancelable: true
-            });
-            
-            chatInput.dispatchEvent(enterEvent);
-            
-            console.log(`ChatAB: ${siteName} 回车键发送完成`);
-            
-            // 发送成功后清空 storage
-            setTimeout(function() {
-              chrome.storage.local.remove('inputValue');
-              console.log('ChatAB: 内容已发送，清空 storage');
-            }, 1000);
-            
-          } catch (e) {
-            console.log(`ChatAB: ${siteName} 键盘事件失败:`, e);
-          }
-        }, 800);
+        }
       } else {
         console.log('ChatAB: 没有找到输入框');
         

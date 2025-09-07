@@ -1,10 +1,16 @@
-import { ChevronDown, Sun, Moon, Settings } from "lucide-react";
+import { ChevronDown, Settings } from "lucide-react";
 import React, { useState, useEffect, useRef } from "react";
 import { Card, CardContent } from "../../components/ui/card";
 import { IconLink } from "../../components/ui/IconLink";
 import { SendIcon } from "../../components/ui/SendIcon";
 import { SettingsPanel } from "../../components/ui/SettingsPanel";
 import { useToast } from "../../components/ui/Toast";
+import { 
+  ModelInfo,
+  getSortedEnabledModels,
+  getRecentModels,
+  setRecentModels 
+} from "../../lib/models";
 
 declare global {
   interface Window {
@@ -39,13 +45,14 @@ declare global {
 export const Frame = (): JSX.Element => {
   const [selectedModel, setSelectedModel] = useState("chatgpt");
   const [inputValue, setInputValue] = useState("");
-  const [isOpen, setIsOpen] = useState(false);
   const [placeholder, setPlaceholder] = useState("Ask anything");
-  const [charCount, setCharCount] = useState(0);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
-  const [themeMode, setThemeMode] = useState<'light' | 'dark' | 'auto'>('auto');
   const [isDark, setIsDark] = useState(() => {
     if (typeof window !== 'undefined') {
+      const savedTheme = localStorage.getItem('theme') as 'light' | 'dark' | 'auto';
+      if (savedTheme === 'dark') return true;
+      if (savedTheme === 'light') return false;
+      // 如果是'auto'或没有设置，则使用系统偏好
       return window.matchMedia('(prefers-color-scheme: dark)').matches;
     }
     return false;
@@ -61,8 +68,6 @@ export const Frame = (): JSX.Element => {
 
   // Handle theme changes from settings panel
   const handleThemeChange = (theme: 'light' | 'dark' | 'auto') => {
-    setThemeMode(theme);
-    
     if (theme === 'auto') {
       const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
       setIsDark(prefersDark);
@@ -71,13 +76,27 @@ export const Frame = (): JSX.Element => {
     }
   };
 
-  // Load theme on component mount
+  // Load theme on component mount and listen for system theme changes
   useEffect(() => {
     const savedTheme = localStorage.getItem('theme') as 'light' | 'dark' | 'auto';
     if (savedTheme) {
       handleThemeChange(savedTheme);
-      setThemeMode(savedTheme);
     }
+
+    // Listen for system theme changes when using 'auto' mode
+    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+    const handleSystemThemeChange = (e: MediaQueryListEvent) => {
+      const currentTheme = localStorage.getItem('theme');
+      if (currentTheme === 'auto') {
+        setIsDark(e.matches);
+      }
+    };
+
+    mediaQuery.addEventListener('change', handleSystemThemeChange);
+    
+    return () => {
+      mediaQuery.removeEventListener('change', handleSystemThemeChange);
+    };
   }, []);
 
   // 加载存储的输入内容
@@ -111,107 +130,10 @@ export const Frame = (): JSX.Element => {
   // Update placeholder when model changes
   useEffect(() => {
     setPlaceholder("Ask anything");
-    setCharCount(0);
   }, [selectedModel]);
 
-  // Model data for mapping
-  const originalModels = [
-    {
-      id: "deepseek",
-      name: "DeepSeek",
-      icon: "/logo/deepseek.png",
-      url: "https://chat.deepseek.com",
-      link: "https://chat.deepseek.com"
-    },
-    {
-      id: "chatgpt",
-      name: "ChatGPT",
-      icon: "/logo/chatGPT.png",
-      url: "https://chatgpt.com",
-      link: "https://chatgpt.com"
-    },
-    {
-      id: "doubao",
-      name: "Doubao",
-      icon: "/logo/doubao.png",
-      url: "https://www.doubao.com/chat/",
-      link: "https://www.doubao.com/chat/"
-    },
-    {
-      id: "gemini",
-      name: "Gemini",
-      icon: "/logo/gemini.png",
-      url: "https://gemini.google.com",
-      link: "https://gemini.google.com"
-    },
-    {
-      id: "perplexity",
-      name: "Perplexity",
-      icon: "/logo/perplexity.png",
-      url: "https://www.perplexity.ai",
-      link: "https://www.perplexity.ai"
-    },{
-      id:"kimi",
-      name:"Kimi",
-      icon:"/logo/kimi.png",
-      url:"https://www.kimi.com",
-      link:"https://www.kimi.com"
-    },{
-      id:"tongyi",
-      name:"Tongyi",
-      icon:"/logo/tongyi.png",
-      url:"https://tongyi.com",
-      link:"https://tongyi.com"
-    },{
-      id:"yuanbao",
-      name:"Yuanbao",
-      icon:"/logo/yuanbao.png",
-      url:"https://yuanbao.tencent.com",
-      link:"https://yuanbao.tencent.com"
-    },{
-      id:"grok",
-      name:"Grok",
-      icon:"/logo/grok.png",
-      url:"https://grok.com",
-      link:"https://grok.com"
-    },{
-      id:"yiyan",
-      name:"Yiyan",
-      icon:"/logo/yiyan.png",
-      url:"https://yiyan.baidu.com",
-      link:"https://yiyan.baidu.com"
-    }
-  ];
 
-  // 工具函数：读取 recentModels
-  function getRecentModels(): string[] {
-    try {
-      const stored = localStorage.getItem('recentModels');
-      if (stored) {
-        const arr = JSON.parse(stored);
-        if (Array.isArray(arr)) return arr;
-      }
-    } catch {}
-    return [];
-  }
-  // 工具函数：写入 recentModels
-  function setRecentModels(arr: string[]) {
-    localStorage.setItem('recentModels', JSON.stringify(arr));
-  }
-
-  // 根据 recentModels 排序 models
-  function getSortedModels(recent: string[]): typeof originalModels {
-    const idSet = new Set(recent);
-    const sorted = [
-      ...recent
-        .map(id => originalModels.find(m => m.id === id))
-        .filter(Boolean) as typeof originalModels,
-      ...originalModels.filter(m => !idSet.has(m.id))
-    ];
-    return sorted;
-  }
-
-  const [models, setModels] = useState(originalModels);
+  const [models, setModels] = useState<ModelInfo[]>([]);
   // 新增：控制模型下拉菜单 hover 展开
   const [isModelDropdownOpen, setIsModelDropdownOpen] = useState(false);
   // 新增：用于延迟隐藏下拉菜单的定时器
@@ -231,16 +153,28 @@ export const Frame = (): JSX.Element => {
     }, 150);
   };
 
+  // 初始化模型列表和选中模型
+  const loadModels = () => {
+    const recent = getRecentModels();
+    const enabledModels = getSortedEnabledModels(recent);
+    
+    if (enabledModels.length > 0) {
+      setModels(enabledModels);
+      
+      // 如果当前选中的模型被禁用了，选择第一个启用的模型
+      const currentModelEnabled = enabledModels.some(m => m.id === selectedModel);
+      if (!currentModelEnabled) {
+        setSelectedModel(enabledModels[0].id);
+      }
+    } else {
+      // 如果所有模型都被禁用，显示空列表但保持当前选中状态
+      setModels([]);
+    }
+  };
+
   // 初始化 recentModels 和 selectedModel
   useEffect(() => {
-    const recent = getRecentModels();
-    if (recent.length > 0) {
-      setModels(getSortedModels(recent));
-      setSelectedModel(recent[0]);
-    } else {
-      setModels(originalModels);
-      setSelectedModel("chatgpt");
-    }
+    loadModels();
   }, []);
   
   // 处理发送功能
@@ -260,7 +194,6 @@ export const Frame = (): JSX.Element => {
   const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const newText = e.target.value;
     setInputValue(newText);
-    setCharCount(newText.length);
     // Auto-adjust height
     e.target.style.height = '40px'; // Reset height
     e.target.style.height = `${Math.min(120, e.target.scrollHeight)}px`; // Set new height with max limit
@@ -289,11 +222,14 @@ export const Frame = (): JSX.Element => {
   // 选择 model 时，更新 recentModels 顺序和存储
   const handleModelChange = (modelId: string) => {
     setSelectedModel(modelId);
-    setModels(prev => {
-      const newRecent = [modelId, ...prev.filter(m => m.id !== modelId).map(m => m.id)];
-      setRecentModels(newRecent);
-      return getSortedModels(newRecent);
-    });
+    const newRecent = [modelId, ...models.filter(m => m.id !== modelId).map(m => m.id)];
+    setRecentModels(newRecent);
+    setModels(getSortedEnabledModels(newRecent));
+  };
+
+  // 当应用开关状态改变时重新加载模型列表
+  const handleAppToggleChange = () => {
+    loadModels();
   };
 
   return (
@@ -302,16 +238,6 @@ export const Frame = (): JSX.Element => {
  
         
         <div className="absolute right-2 top-[-40px] flex gap-2">
-          <button
-            onClick={() => setIsDark(!isDark)}
-            className="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
-          >
-            {isDark ? (
-              <Sun className="w-5 h-5 text-yellow-500" />
-            ) : (
-              <Moon className="w-5 h-5 text-gray-600" />
-            )}
-          </button>
           <button
             onClick={() => setIsSettingsOpen(true)}
             className="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
@@ -433,6 +359,7 @@ export const Frame = (): JSX.Element => {
         onClose={() => setIsSettingsOpen(false)}
         isDark={isDark}
         onThemeChange={handleThemeChange}
+        onAppToggleChange={handleAppToggleChange}
       />
       
       {/* Toast Notifications */}
