@@ -1,8 +1,10 @@
-import { ChevronDown, Sun, Moon } from "lucide-react";
+import { ChevronDown, Sun, Moon, Settings } from "lucide-react";
 import React, { useState, useEffect, useRef } from "react";
 import { Card, CardContent } from "../../components/ui/card";
 import { IconLink } from "../../components/ui/IconLink";
 import { SendIcon } from "../../components/ui/SendIcon";
+import { SettingsPanel } from "../../components/ui/SettingsPanel";
+import { useToast } from "../../components/ui/Toast";
 
 declare global {
   interface Window {
@@ -40,16 +42,71 @@ export const Frame = (): JSX.Element => {
   const [isOpen, setIsOpen] = useState(false);
   const [placeholder, setPlaceholder] = useState("Ask anything");
   const [charCount, setCharCount] = useState(0);
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [themeMode, setThemeMode] = useState<'light' | 'dark' | 'auto'>('auto');
   const [isDark, setIsDark] = useState(() => {
     if (typeof window !== 'undefined') {
       return window.matchMedia('(prefers-color-scheme: dark)').matches;
     }
     return false;
   });
+  
+  
+  // Toast通知
+  const { showToast, ToastContainer } = useToast();
 
   useEffect(() => {
     document.documentElement.classList.toggle('dark', isDark);
   }, [isDark]);
+
+  // Handle theme changes from settings panel
+  const handleThemeChange = (theme: 'light' | 'dark' | 'auto') => {
+    setThemeMode(theme);
+    
+    if (theme === 'auto') {
+      const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      setIsDark(prefersDark);
+    } else {
+      setIsDark(theme === 'dark');
+    }
+  };
+
+  // Load theme on component mount
+  useEffect(() => {
+    const savedTheme = localStorage.getItem('theme') as 'light' | 'dark' | 'auto';
+    if (savedTheme) {
+      handleThemeChange(savedTheme);
+      setThemeMode(savedTheme);
+    }
+  }, []);
+
+  // 加载存储的输入内容
+  useEffect(() => {
+    const loadStoredData = async () => {
+      if (window.chrome?.storage?.local) {
+        try {
+          // Promise化Chrome Storage API
+          const chromeStorageGet = (keys: string[]): Promise<{ [key: string]: any }> => {
+            return new Promise((resolve) => {
+              window.chrome.storage.local.get(keys, resolve);
+            });
+          };
+
+          const result = await chromeStorageGet(['inputValue']);
+          
+          if (result.inputValue) {
+            setInputValue(result.inputValue);
+          }
+        } catch (error) {
+          console.error('ChatAB: 加载存储数据失败:', error);
+        }
+      }
+    };
+
+    loadStoredData();
+  }, []);
+
+
 
   // Update placeholder when model changes
   useEffect(() => {
@@ -62,14 +119,14 @@ export const Frame = (): JSX.Element => {
     {
       id: "deepseek",
       name: "DeepSeek",
-      icon: "/deepseek.png",
+      icon: "/logo/deepseek.png",
       url: "https://chat.deepseek.com",
       link: "https://chat.deepseek.com"
     },
     {
       id: "chatgpt",
       name: "ChatGPT",
-      icon: "/chatGPT.png",
+      icon: "/logo/chatGPT.png",
       url: "https://chatgpt.com",
       link: "https://chatgpt.com"
     },
@@ -186,9 +243,13 @@ export const Frame = (): JSX.Element => {
     }
   }, []);
   
-  // 处理发送功能 - 移除URL参数传递
+  // 处理发送功能
   const handleSend = () => {
-    if (!inputValue.trim()) return;
+    if (!inputValue.trim()) {
+      showToast('请输入内容', 'info');
+      return;
+    }
+    
     const model = models.find(m => m.id === selectedModel);
     if (model) {
       window.location.href = model.url;
@@ -240,18 +301,27 @@ export const Frame = (): JSX.Element => {
       <div className="w-full max-w-[800px] mx-auto relative">
  
         
-        <button
-          onClick={() => setIsDark(!isDark)}
-          className="absolute right-2 top-[-40px] p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
-        >
-          {isDark ? (
-            <Sun className="w-5 h-5 text-yellow-500" />
-          ) : (
-            <Moon className="w-5 h-5 text-gray-600" />
-          )}
-        </button>
+        <div className="absolute right-2 top-[-40px] flex gap-2">
+          <button
+            onClick={() => setIsDark(!isDark)}
+            className="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
+          >
+            {isDark ? (
+              <Sun className="w-5 h-5 text-yellow-500" />
+            ) : (
+              <Moon className="w-5 h-5 text-gray-600" />
+            )}
+          </button>
+          <button
+            onClick={() => setIsSettingsOpen(true)}
+            className="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
+          >
+            <Settings className={`w-5 h-5 ${isDark ? 'text-gray-300' : 'text-gray-600'}`} />
+          </button>
+        </div>
         <Card className={`relative p-2 rounded-[20px] min-h-[120px] ${isDark ? 'bg-gray-800 border-gray-700' : 'bg-white'}`}>
           <CardContent className="p-0 flex flex-col">
+            
             {/* Main content area - input field */}
             <div className="flex-1 px-4 mb-[5px] relative">
               <textarea
@@ -276,7 +346,7 @@ export const Frame = (): JSX.Element => {
                 >
                   {/* 按钮内容 */}
                 <div
-                    className={`h-[34px] ${isDark ? 'bg-gray-700' : 'bg-[#f2f2f2]'} rounded-[20px] px-2.5 flex items-center group select-none`}
+                    className={`h-[40px] ${isDark ? 'bg-gray-700' : 'bg-[#f2f2f2]'} rounded-full px-2.5 flex items-center group select-none`}
                   style={{ minWidth: 40, maxWidth: isModelDropdownOpen ? 180 : 40, transition: 'max-width 0.2s cubic-bezier(0.4,0,0.2,1)' }}
                 >
                   <div className="flex items-center gap-1 cursor-pointer">
@@ -336,7 +406,8 @@ export const Frame = (): JSX.Element => {
                     </ul>
                 </div>
               </div>
-              <div className="flex items-center">
+              <div className="flex items-center gap-2">
+                {/* Send Button */}
                 <button 
                   onClick={handleSend}
                   className="cursor-pointer"
@@ -355,6 +426,17 @@ export const Frame = (): JSX.Element => {
           </CardContent>
         </Card>
       </div>
+      
+      {/* Settings Panel */}
+      <SettingsPanel
+        isOpen={isSettingsOpen}
+        onClose={() => setIsSettingsOpen(false)}
+        isDark={isDark}
+        onThemeChange={handleThemeChange}
+      />
+      
+      {/* Toast Notifications */}
+      <ToastContainer />
     </div>
   );
 };
