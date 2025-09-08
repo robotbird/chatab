@@ -299,33 +299,41 @@ export const Frame = (): JSX.Element => {
                 >
                   {/* 按钮内容 */}
                 <div
-                    className={`h-[40px] ${isDark ? 'bg-gray-700' : 'bg-[#f2f2f2]'} rounded-full px-2.5 flex items-center group select-none`}
-                  style={{ minWidth: 40, maxWidth: isModelDropdownOpen ? 180 : 40, transition: 'max-width 0.2s cubic-bezier(0.4,0,0.2,1)' }}
+                    className={`h-[36px] ${isDark ? 'bg-gray-700' : 'bg-[#f2f2f2]'} rounded-full flex items-center justify-center group select-none transition-all duration-200 cursor-pointer`}
+                  style={{ minWidth: 36, maxWidth: isModelDropdownOpen ? 180 : 36, transition: 'max-width 0.2s cubic-bezier(0.4,0,0.2,1)' }}
                 >
-                  <div className="flex items-center gap-1 cursor-pointer">
-                    {/* 当前选中模型图标始终显示，名称和链接icon仅在hover时显示 */}
-                    <div className="flex items-center">
+                  {/* 默认状态：只显示居中的logo */}
+                  {!isModelDropdownOpen && (
+                    <img
+                      className="w-5 h-5 object-cover"
+                      alt={`${selectedModel} icon`}
+                      src={models.find(m => m.id === selectedModel)?.icon}
+                    />
+                  )}
+                  
+                  {/* 展开状态：显示完整内容 */}
+                  {isModelDropdownOpen && (
+                    <div className="flex items-center w-full px-2.5">
                       <img
-                        className="w-5 h-5 object-cover mr-0"
+                        className="w-5 h-5 object-cover"
                         alt={`${selectedModel} icon`}
                         src={models.find(m => m.id === selectedModel)?.icon}
                       />
                       <span
-                        className={`font-['Roboto',Helvetica] font-normal ${isDark ? 'text-gray-200' : 'text-[#666666]'} text-sm tracking-[0.50px] ml-2 transition-all duration-200 ${isModelDropdownOpen ? 'opacity-100 max-w-[100px]' : 'opacity-0 max-w-0 overflow-hidden'}`}
-                        style={{ transition: 'opacity 0.2s, max-width 0.2s, margin-left 0.2s' }}
+                        className={`font-['Roboto',Helvetica] font-normal ${isDark ? 'text-gray-200' : 'text-[#666666]'} text-sm tracking-[0.50px] ml-2 transition-all duration-200 opacity-100 max-w-[100px]`}
                       >
                         {models.find(m => m.id === selectedModel)?.name}
                       </span>
-                      <ChevronDown className={`w-4 h-4 ml-1 transition-transform duration-200 ${isModelDropdownOpen ? 'opacity-100' : 'opacity-0'} ${isModelDropdownOpen ? 'rotate-180' : ''} ${isDark ? 'text-gray-400' : 'text-gray-500'}`} />
-                    </div>
+                      <ChevronDown className={`w-4 h-4 ml-1 transition-transform duration-200 opacity-100 rotate-180 ${isDark ? 'text-gray-400' : 'text-gray-500'}`} />
                       <IconLink
                         href={models.find(m => m.id === selectedModel)?.link}
                         target="_blank"
-                        className={`ml-2 w-5 h-5 transition-opacity duration-150 ${isModelDropdownOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
+                        className="ml-2 w-5 h-5 opacity-100"
                         style={{ maxHeight: '1.5em' }}
                       />
                     </div>
-                  </div>
+                  )}
+                </div>
                   {/* 下拉菜单内容，和按钮为兄弟节点 */}
                     <ul
                       className={`absolute left-0 top-[110%] w-[180px] z-50 rounded-[10px] shadow-md p-1 transition-all duration-200 overflow-y-auto
@@ -366,7 +374,7 @@ export const Frame = (): JSX.Element => {
                   className="cursor-pointer"
                 >
                   <SendIcon 
-                    size={32}
+                    size={36}
                     className={`transition-all duration-200 hover:opacity-80 ${
                       inputValue.trim() 
                         ? (isDark ? 'text-white hover:text-gray-200' : 'text-black hover:text-gray-800')
