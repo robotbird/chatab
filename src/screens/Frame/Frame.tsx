@@ -213,6 +213,10 @@ export const Frame = (): JSX.Element => {
     
     const model = models.find(m => m.id === selectedModel);
     if (model) {
+      // 直接存储原始输入内容，contentScript会正确处理换行符
+      if (window.chrome?.storage?.local) {
+        window.chrome.storage.local.set({ inputValue: inputValue });
+      }
       window.location.href = model.url;
     }
   };
@@ -223,7 +227,7 @@ export const Frame = (): JSX.Element => {
     setInputValue(newText);
     // Auto-adjust height
     e.target.style.height = '40px'; // Reset height
-    e.target.style.height = `${Math.min(120, e.target.scrollHeight)}px`; // Set new height with max limit
+    e.target.style.height = `${Math.min(240, e.target.scrollHeight)}px`; // Set new height with max limit (doubled from 120 to 240)
     // 输入变化时实时写入 storage
     if (window.chrome?.storage?.local) {
       window.chrome.storage.local.set({ inputValue: newText });
@@ -235,7 +239,7 @@ export const Frame = (): JSX.Element => {
     const textarea = document.querySelector('textarea');
     if (textarea) {
       textarea.style.height = '40px'; // Reset height
-      textarea.style.height = `${Math.min(120, textarea.scrollHeight)}px`;
+      textarea.style.height = `${Math.min(240, textarea.scrollHeight)}px`; // Doubled max height from 120 to 240
     }
   }, [inputValue]);
 
@@ -282,8 +286,11 @@ export const Frame = (): JSX.Element => {
                 onChange={handleInputChange}
                 onKeyDown={handleKeyDown}
                 placeholder={placeholder}
-                className={`w-full h-[40px] min-h-[60px]  rounded-lg bg-transparent focus:outline-none resize-none text-[14px] leading-tight ${
-                  isDark ? 'text-white placeholder:text-gray-400' : 'text-[#1e1e1e] placeholder:text-gray-400'
+                style={{
+                  fontFamily: 'ui-sans-serif, -apple-system, system-ui, "Segoe UI", Helvetica, "Apple Color Emoji", Arial, sans-serif, "Segoe UI Emoji", "Segoe UI Symbol"'
+                }}
+                className={`w-full h-[40px] min-h-[60px] rounded-lg bg-transparent focus:outline-none resize-none text-[14px] leading-tight ${
+                  isDark ? 'text-white placeholder:text-gray-400' : 'text-gray-700 placeholder:text-gray-400'
                 }`}
               />
             </div>
