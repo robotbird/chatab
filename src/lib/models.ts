@@ -12,70 +12,70 @@ export const originalModels: ModelInfo[] = [
   {
     id: "deepseek",
     name: "DeepSeek",
-    icon: "/logo/deepseek.png",
+    icon: "/logo/deepseek.svg",
     url: "https://chat.deepseek.com",
     link: "https://chat.deepseek.com"
   },
   {
     id: "chatgpt",
     name: "ChatGPT",
-    icon: "/logo/chatGPT.png",
+    icon: "/logo/chatGPT.svg",
     url: "https://chatgpt.com",
     link: "https://chatgpt.com"
   },
   {
     id: "doubao",
     name: "Doubao",
-    icon: "/logo/doubao.png",
+    icon: "/logo/doubao.svg",
     url: "https://www.doubao.com/chat/",
     link: "https://www.doubao.com/chat/"
   },
   {
     id: "gemini",
     name: "Gemini",
-    icon: "/logo/gemini.png",
+    icon: "/logo/gemini.svg",
     url: "https://gemini.google.com",
     link: "https://gemini.google.com"
   },
   {
     id: "perplexity",
     name: "Perplexity",
-    icon: "/logo/perplexity.png",
+    icon: "/logo/perplexity.svg",
     url: "https://www.perplexity.ai",
     link: "https://www.perplexity.ai"
   },
   {
     id: "kimi",
     name: "Kimi",
-    icon: "/logo/kimi.png",
+    icon: "/logo/kimi.svg",
     url: "https://www.kimi.com",
     link: "https://www.kimi.com"
   },
   {
     id: "tongyi",
     name: "Tongyi",
-    icon: "/logo/tongyi.png",
+    icon: "/logo/tongyi.svg",
     url: "https://tongyi.com",
     link: "https://tongyi.com"
   },
   {
     id: "yuanbao",
     name: "Yuanbao",
-    icon: "/logo/yuanbao.png",
+    icon: "/logo/yuanbao.svg",
     url: "https://yuanbao.tencent.com",
     link: "https://yuanbao.tencent.com"
   },
   {
     id: "grok",
     name: "Grok",
-    icon: "/logo/grok.png",
+    icon: "/logo/grok.svg",
     url: "https://grok.com",
     link: "https://grok.com"
   },
   {
     id: "yiyan",
     name: "Yiyan",
-    icon: "/logo/yiyan.png",
+    icon: "/logo/yiyan.svg",
     url: "https://yiyan.baidu.com",
     link: "https://yiyan.baidu.com"
   }
