@@ -19,6 +19,58 @@ class TongyiHandler extends BaseHandler {
   }
 
   /**
+   * 获取通义特定的发送按钮选择器
+   */
+  getSendButtonSelectors() {
+    return [
+      // 通过发送图标查找可点击的父元素
+      'div[class*="operateBtn"]',  // 包含operateBtn的div（最外层可点击元素）
+      '[class*="operateBtn"]',  // 任何包含operateBtn的元素
+      // 通过SVG图标的特征查找
+      'span.anticon svg use[xlink\\:href="#icon-fasong_default"]',  // 发送图标的use元素
+      'span.anticon:has(svg use[xlink\\:href="#icon-fasong_default"])',  // 包含发送图标的span（如果浏览器支持:has）
+      'div:has(span.anticon svg use[xlink\\:href="#icon-fasong_default"])',  // 包含发送图标的div（如果浏览器支持:has）
+      ...super.getSendButtonSelectors()  // 继承父类的通用选择器作为备选
+    ];
+  }
+
+  /**
+   * 重写发送按钮查找逻辑，添加特殊处理
+   */
+  async sendByButton() {
+    // 首先尝试通过SVG图标查找发送按钮的父元素
+    const iconElement = document.querySelector('svg use[xlink\\:href="#icon-fasong_default"]');
+    if (iconElement) {
+      // 向上查找可点击的父元素
+      let clickableParent = iconElement;
+      for (let i = 0; i < 5; i++) {  // 最多向上查找5层
+        clickableParent = clickableParent.parentElement;
+        if (!clickableParent) break;
+        
+        // 检查是否是可点击的元素
+        const isClickable = clickableParent.tagName === 'BUTTON' || 
+                           clickableParent.tagName === 'DIV' || 
+                           clickableParent.onclick ||
+                           clickableParent.getAttribute('role') === 'button' ||
+                           window.getComputedStyle(clickableParent).cursor === 'pointer';
+        
+        if (isClickable) {
+          try {
+            clickableParent.click();
+            this.utils.log(`${this.siteName}: 通过SVG图标找到并点击发送按钮成功`);
+            return true;
+          } catch (e) {
+            this.utils.log(`${this.siteName}: 点击SVG父元素失败: ${e.message}`);
+          }
+        }
+      }
+    }
+    
+    // 如果通过SVG查找失败，使用父类的方法
+    return await super.sendByButton();
+  }
+
+  /**
    * 重写查找输入框方法，添加调试信息
    */
   findInputElement() {

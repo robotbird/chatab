@@ -63,16 +63,26 @@ class WallpaperService {
         console.log(`Trying to fetch from: ${apiUrl}`);
         const response = await axios.get(apiUrl, {
           params: { idx: start, n: count },
-          timeout: 8000,
-          // 在浏览器环境中不能设置User-Agent等受限header
+          timeout: 10000,
+          headers: {
+            'Accept': 'application/json, text/plain, */*',
+            'Cache-Control': 'no-cache'
+          },
+          // 添加重试机制
+          validateStatus: (status) => status >= 200 && status < 300,
         });
         
-        if (response.data && response.data.images) {
-          console.log(`Successfully fetched from: ${apiUrl}`);
+        if (response.data && response.data.images && Array.isArray(response.data.images)) {
+          console.log(`Successfully fetched from: ${apiUrl}, got ${response.data.images.length} images`);
           return response.data;
         }
       } catch (error) {
-        console.warn(`Failed to fetch from ${apiUrl}:`, error);
+        const axiosError = error as any;
+        console.warn(`Failed to fetch from ${apiUrl}:`, {
+          message: axiosError.message,
+          code: axiosError.code,
+          status: axiosError.response?.status,
+        });
         lastError = error as Error;
         continue;
       }
@@ -167,36 +177,58 @@ class WallpaperService {
   // 生成缩略图（dataURL）
   private async generateThumbnail(imageUrl: string, maxWidth = 480, maxHeight = 270): Promise<string | null> {
     try {
-      const res = await fetch(imageUrl, { mode: 'cors' });
-      const blob = await res.blob();
-      const objectUrl = URL.createObjectURL(blob);
-      const img = await new Promise<HTMLImageElement>((resolve, reject) => {
-        const image = new Image();
-        image.onload = () => resolve(image);
-        image.onerror = reject;
-        image.src = objectUrl;
-      });
-      const canvas = document.createElement('canvas');
-      const ratio = Math.min(maxWidth / img.width, maxHeight / img.height);
-      canvas.width = Math.max(1, Math.floor(img.width * ratio));
-      canvas.height = Math.max(1, Math.floor(img.height * ratio));
-      const ctx = canvas.getContext('2d');
-      if (!ctx) return null;
-      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-      const dataUrl = canvas.toDataURL('image/jpeg', 0.8);
-      URL.revokeObjectURL(objectUrl);
-      return dataUrl;
-    } catch (e) {
-      console.warn('generateThumbnail failed, fallback to query params:', e);
-      // 尝试通过 query 参数缩放（并非所有 URL 都支持）
+      // 先尝试通过 query 参数缩放（Bing 图片支持）
       try {
         const url = new URL(imageUrl);
         url.searchParams.set('w', String(maxWidth));
         url.searchParams.set('h', String(maxHeight));
         return url.toString();
       } catch {
+        // URL 解析失败，继续使用 canvas 方法
+      }
+
+      const res = await fetch(imageUrl, { 
+        mode: 'cors',
+        cache: 'default',
+        headers: {
+          'Accept': 'image/*'
+        }
+      });
+      
+      if (!res.ok) {
+        throw new Error(`HTTP ${res.status}: ${res.statusText}`);
+      }
+      
+      const blob = await res.blob();
+      const objectUrl = URL.createObjectURL(blob);
+      
+      const img = await new Promise<HTMLImageElement>((resolve, reject) => {
+        const image = new Image();
+        image.onload = () => resolve(image);
+        image.onerror = (e) => reject(new Error('Image load failed'));
+        image.src = objectUrl;
+        // 添加超时
+        setTimeout(() => reject(new Error('Image load timeout')), 10000);
+      });
+      
+      const canvas = document.createElement('canvas');
+      const ratio = Math.min(maxWidth / img.width, maxHeight / img.height);
+      canvas.width = Math.max(1, Math.floor(img.width * ratio));
+      canvas.height = Math.max(1, Math.floor(img.height * ratio));
+      const ctx = canvas.getContext('2d');
+      
+      if (!ctx) {
+        URL.revokeObjectURL(objectUrl);
         return null;
       }
+      
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+      const dataUrl = canvas.toDataURL('image/jpeg', 0.8);
+      URL.revokeObjectURL(objectUrl);
+      return dataUrl;
+    } catch (e) {
+      console.warn('generateThumbnail failed:', e);
+      return null;
     }
   }
   // 获取或生成缩略图
