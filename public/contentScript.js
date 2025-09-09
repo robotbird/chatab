@@ -79,8 +79,9 @@ function initScript() {
       let sendButton = null;
       
       if (isChatGPT) {
-        // ChatGPT 输入框选择器
+        // ChatGPT 输入框选择器 - 优先查找ProseMirror编辑器
         chatInput = document.querySelector('#prompt-textarea') || 
+                   document.querySelector('div.ProseMirror[contenteditable="true"]') ||
                    document.querySelector('textarea[data-id="root"]') ||
                    document.querySelector('textarea[placeholder*="Message"]') ||
                    document.querySelector('textarea[placeholder*="message"]') ||
@@ -288,30 +289,49 @@ function initScript() {
           });
         }
       } else if (isGrok) {
-        // Grok 输入框选择器 - 基于实际HTML结构
-        console.log('ChatAB: 开始查找Grok输入框');
+        // Grok 输入框选择器 - 基于TipTap ProseMirror结构
+        console.log('ChatAB: 开始查找Grok输入框 (TipTap ProseMirror)');
         
         // 调试信息
         const allTextareas = document.querySelectorAll('textarea');
-        const ariaLabelTextareas = document.querySelectorAll('textarea[aria-label]');
+        const allContentEditables = document.querySelectorAll('div[contenteditable="true"]');
+        const tiptapElements = document.querySelectorAll('.tiptap');
+        const proseMirrorElements = document.querySelectorAll('.ProseMirror');
         
         console.log('ChatAB: Grok调试信息:', {
           textareaCount: allTextareas.length,
-          ariaLabelTextareaCount: ariaLabelTextareas.length
+          contentEditableCount: allContentEditables.length,
+          tiptapCount: tiptapElements.length,
+          proseMirrorCount: proseMirrorElements.length
         });
         
-        // 基于实际HTML结构的选择器优先级
-        chatInput = document.querySelector('textarea[aria-label*="Ask Grok anything"]') ||
+        // 基于TipTap ProseMirror的选择器优先级
+        chatInput = document.querySelector('div.tiptap.ProseMirror[contenteditable="true"]') ||
+                   document.querySelector('div.ProseMirror[contenteditable="true"].w-full') ||
+                   document.querySelector('div.tiptap[contenteditable="true"]') ||
+                   document.querySelector('div.ProseMirror[contenteditable="true"]') ||
+                   document.querySelector('div[contenteditable="true"][data-placeholder*="What do you want to know?"]') ||
+                   document.querySelector('div[contenteditable="true"].w-full.px-2') ||
+                   document.querySelector('div[contenteditable="true"][translate="no"]') ||
+                   // 备用方案：尝试旧的textarea选择器
+                   document.querySelector('textarea[aria-label*="Ask Grok anything"]') ||
                    document.querySelector('textarea[aria-label*="Ask Grok"]') ||
                    document.querySelector('textarea[aria-label*="Grok"]') ||
                    document.querySelector('textarea.w-full.bg-transparent') ||
                    document.querySelector('textarea[dir="auto"]') ||
                    document.querySelector('textarea[placeholder*="Ask me anything"]') ||
                    document.querySelector('textarea[placeholder*="输入"]') ||
+                   document.querySelector('div[contenteditable="true"]') ||
                    document.querySelector('textarea');
         
         if (chatInput) {
           console.log('ChatAB: 找到Grok输入框，类型:', chatInput.tagName, '类名:', chatInput.className);
+          console.log('ChatAB: Grok输入框属性:', {
+            contentEditable: chatInput.contentEditable,
+            dataPlaceholder: chatInput.getAttribute('data-placeholder'),
+            translate: chatInput.getAttribute('translate'),
+            classList: Array.from(chatInput.classList)
+          });
         } else {
           console.log('ChatAB: 未找到Grok输入框');
         }
@@ -530,6 +550,203 @@ function initScript() {
           }
         }
         
+        // Perplexity专用发送函数
+        async function sendPerplexityMessage() {
+          console.log('ChatAB: 开始Perplexity专用发送流程');
+          
+          // 获取Perplexity输入框内容的函数
+          function getPerplexityInputText() {
+            if (chatInput.textContent !== undefined) {
+              return chatInput.textContent.trim(); // contenteditable div
+            } else if (chatInput.innerText !== undefined) {
+              return chatInput.innerText.trim(); // 其他元素
+            } else {
+              return '';
+            }
+          }
+          
+          // 检查输入框内容
+          const beforeSendText = getPerplexityInputText();
+          console.log('ChatAB: Perplexity发送前文本内容长度:', beforeSendText.length);
+          console.log('ChatAB: Perplexity发送前文本内容预览:', beforeSendText.substring(0, 100) + '...');
+          
+          // 如果没有文本内容，不发送
+          if (!beforeSendText || beforeSendText.trim() === '') {
+            console.log('ChatAB: Perplexity没有文本内容，跳过发送');
+            return false;
+          }
+          
+          let retryCount = 0;
+          const maxRetries = 5;
+          
+          async function attemptSend() {
+            retryCount++;
+            console.log(`ChatAB: Perplexity发送尝试 ${retryCount}/${maxRetries}`);
+            
+            try {
+              // 确保输入框处于焦点状态
+              chatInput.focus();
+              
+              // 等待一下确保焦点已设置
+              await new Promise(resolve => setTimeout(resolve, 200));
+              
+              // 优先尝试回车键发送
+              console.log('ChatAB: Perplexity优先尝试回车键发送');
+              
+              // 触发keydown事件
+              const keydownEvent = new KeyboardEvent('keydown', {
+                key: 'Enter',
+                code: 'Enter',
+                keyCode: 13,
+                which: 13,
+                bubbles: true,
+                cancelable: true
+              });
+              chatInput.dispatchEvent(keydownEvent);
+              
+              // 触发keypress事件
+              const keypressEvent = new KeyboardEvent('keypress', {
+                key: 'Enter',
+                code: 'Enter',
+                keyCode: 13,
+                which: 13,
+                bubbles: true,
+                cancelable: true
+              });
+              chatInput.dispatchEvent(keypressEvent);
+              
+              // 触发keyup事件
+              const keyupEvent = new KeyboardEvent('keyup', {
+                key: 'Enter',
+                code: 'Enter',
+                keyCode: 13,
+                which: 13,
+                bubbles: true,
+                cancelable: true
+              });
+              chatInput.dispatchEvent(keyupEvent);
+              
+              console.log('ChatAB: Perplexity回车键事件已触发');
+              
+              // 等待页面响应
+              await new Promise(resolve => setTimeout(resolve, 1500));
+              
+              // 检查文本框是否清空（判断发送是否成功）
+              const afterSendText = getPerplexityInputText();
+              console.log('ChatAB: Perplexity回车发送后文本内容长度:', afterSendText.length);
+              console.log('ChatAB: Perplexity回车发送后文本内容预览:', afterSendText.substring(0, 50) + '...');
+              
+              // 检查发送是否成功的条件：
+              // 1. 文本框完全清空，或者
+              // 2. 文本内容明显减少（可能是部分发送成功）
+              const textCleared = afterSendText.length === 0 || afterSendText.trim() === '';
+              const textReduced = afterSendText.length < beforeSendText.length * 0.8; // 内容减少了80%以上
+              
+              if (textCleared || textReduced) {
+                console.log('ChatAB: Perplexity回车发送成功，文本框已清空或内容明显减少');
+                
+                // 发送成功后清空 storage
+                setTimeout(function() {
+                  chrome.storage.local.remove(['inputValue']);
+                  console.log('ChatAB: Perplexity通过回车键发送成功，清空 storage');
+                }, 1000);
+                
+                return true; // 发送成功
+              } else {
+                console.log('ChatAB: Perplexity回车发送可能失败，尝试按钮发送作为备用方案');
+                
+                // 回车发送失败，尝试按钮发送作为备用方案
+                const perplexitySendButton = document.querySelector('button[data-testid="submit-button"]');
+                const sendButtons = [
+                  perplexitySendButton,
+                  ...document.querySelectorAll('button[aria-label*="Submit"], button[aria-label*="Send"]'),
+                  ...document.querySelectorAll('button:has(svg[class*="arrow"]), button:has(svg[viewBox*="24"])'),
+                  ...document.querySelectorAll('button[class*="bg-super"], button[class*="text-inverse"]'),
+                  ...document.querySelectorAll('[data-testid*="send"], [aria-label*="发送"], [title*="发送"]'),
+                  ...document.querySelectorAll('button[type="submit"], .send-btn, .submit-btn')
+                ].filter(Boolean);
+                
+                console.log(`ChatAB: Perplexity找到发送按钮数量: ${sendButtons.length}`);
+                
+                // 查找可用的发送按钮
+                let availableButton = null;
+                for (let i = 0; i < Math.min(sendButtons.length, 5); i++) {
+                  const btn = sendButtons[i];
+                  const isDisabled = btn.disabled || 
+                                   btn.hasAttribute('disabled') || 
+                                   btn.classList.contains('disabled') ||
+                                   btn.getAttribute('aria-disabled') === 'true' ||
+                                   window.getComputedStyle(btn).pointerEvents === 'none';
+                  
+                  console.log(`ChatAB: Perplexity检查按钮${i + 1}:`, {
+                    tagName: btn.tagName,
+                    testId: btn.getAttribute('data-testid'),
+                    ariaLabel: btn.getAttribute('aria-label'),
+                    className: btn.className,
+                    disabled: btn.disabled,
+                    isDisabled
+                  });
+                  
+                  if (!isDisabled) {
+                    availableButton = btn;
+                    console.log(`ChatAB: Perplexity找到可用发送按钮${i + 1}`);
+                    break;
+                  }
+                }
+                
+                if (availableButton) {
+                  console.log('ChatAB: Perplexity点击发送按钮作为备用方案');
+                  availableButton.click();
+                  
+                  // 等待页面响应
+                  await new Promise(resolve => setTimeout(resolve, 2000));
+                  
+                  // 检查按钮发送结果
+                  const afterButtonSendText = getPerplexityInputText();
+                  console.log('ChatAB: Perplexity按钮发送后文本内容长度:', afterButtonSendText.length);
+                  
+                  const buttonTextCleared = afterButtonSendText.length === 0 || afterButtonSendText.trim() === '';
+                  const buttonTextReduced = afterButtonSendText.length < beforeSendText.length * 0.8;
+                  
+                  if (buttonTextCleared || buttonTextReduced) {
+                    console.log('ChatAB: Perplexity按钮发送成功');
+                    setTimeout(function() {
+                      chrome.storage.local.remove(['inputValue']);
+                      console.log('ChatAB: Perplexity通过按钮发送成功，清空 storage');
+                    }, 1000);
+                    return true;
+                  }
+                }
+                
+                // 如果还有重试次数，继续尝试
+                if (retryCount < maxRetries) {
+                  console.log(`ChatAB: Perplexity准备重试发送，剩余重试次数: ${maxRetries - retryCount}`);
+                  await new Promise(resolve => setTimeout(resolve, 1500));
+                  return await attemptSend();
+                } else {
+                  console.log('ChatAB: Perplexity发送失败，已达最大重试次数');
+                  return false;
+                }
+              }
+              
+            } catch (e) {
+              console.log(`ChatAB: Perplexity发送尝试${retryCount}失败:`, e);
+              
+              if (retryCount < maxRetries) {
+                await new Promise(resolve => setTimeout(resolve, 1500));
+                return await attemptSend();
+              } else {
+                return false;
+              }
+            }
+          }
+          
+          const sendResult = await attemptSend();
+          if (!sendResult) {
+            console.log('ChatAB: Perplexity发送最终失败');
+          }
+        }
+        
         // Doubao专用发送函数
         async function sendDoubaoMessage() {
           console.log('ChatAB: 开始Doubao专用发送流程');
@@ -735,6 +952,13 @@ function initScript() {
               return; // ChatGPT处理完成，退出
             }
             
+            // 对于Perplexity，使用专用的发送逻辑
+            if (isPerplexity) {
+              console.log('ChatAB: Perplexity使用专用发送逻辑');
+              await sendPerplexityMessage();
+              return; // Perplexity处理完成，退出
+            }
+            
             // 对于Doubao，使用专用的发送逻辑
             if (isDoubao) {
               console.log('ChatAB: Doubao使用专用发送逻辑');
@@ -912,10 +1136,71 @@ function initScript() {
             
             console.log('ChatAB: 文本内容填充完成');
         } else if (chatInput.getAttribute('contenteditable') === 'true') {
-          if ((isPerplexity && (chatInput.getAttribute('data-lexical-editor') === 'true' || chatInput.id === 'ask-input')) ||
-              (isKimi && chatInput.getAttribute('data-lexical-editor') === 'true') ||
+          if (isPerplexity && (chatInput.getAttribute('data-lexical-editor') === 'true' || chatInput.id === 'ask-input')) {
+            // Perplexity 的 Lexical 编辑器特殊处理
+            console.log('ChatAB: Perplexity Lexical编辑器特殊处理');
+            
+            // 聚焦编辑器
+            chatInput.focus();
+            
+            try {
+              // 优先尝试使用 document.execCommand 插入文本
+              if (document.execCommand) {
+                // 先清空内容
+                document.execCommand('selectAll', false, null);
+                document.execCommand('delete', false, null);
+                
+                // 插入文本，让浏览器自动处理换行
+                document.execCommand('insertText', false, inputValue);
+                console.log('ChatAB: Perplexity使用execCommand插入文本成功');
+              } else {
+                throw new Error('execCommand not supported');
+              }
+            } catch (e) {
+              console.log('ChatAB: execCommand失败，使用备用方案:', e);
+              
+              try {
+                // 备用方案1：模拟用户输入
+                chatInput.innerHTML = '';
+                chatInput.focus();
+                
+                // 创建一个文本节点并插入
+                const textNode = document.createTextNode(inputValue);
+                chatInput.appendChild(textNode);
+                
+                // 设置光标到末尾
+                const range = document.createRange();
+                const selection = window.getSelection();
+                range.selectNodeContents(chatInput);
+                range.collapse(false);
+                selection.removeAllRanges();
+                selection.addRange(range);
+                
+                console.log('ChatAB: Perplexity使用文本节点插入成功');
+              } catch (e2) {
+                console.log('ChatAB: 文本节点插入失败，使用最后备用方案:', e2);
+                
+                // 最后备用方案：使用简单的 <br> 标签处理换行
+                chatInput.innerHTML = '';
+                const formattedHTML = inputValue.replace(/\n/g, '<br>');
+                chatInput.innerHTML = formattedHTML;
+              }
+            }
+            
+            // 触发必要的事件
+            ['input', 'change', 'keyup', 'paste'].forEach(eventType => {
+              const event = new Event(eventType, { bubbles: true, cancelable: true });
+              chatInput.dispatchEvent(event);
+            });
+            
+            // 额外触发一个自定义事件
+            const customEvent = new Event('input', { bubbles: true });
+            setTimeout(() => {
+              chatInput.dispatchEvent(customEvent);
+            }, 100);
+          } else if ((isKimi && chatInput.getAttribute('data-lexical-editor') === 'true') ||
               (isYiyan && chatInput.getAttribute('data-lexical-editor') === 'true')) {
-            // Perplexity、Kimi 和 Yiyan 的 Lexical 编辑器特殊处理
+            // Kimi 和 Yiyan 的 Lexical 编辑器特殊处理
             try {
               console.log(`ChatAB: ${siteName} Lexical编辑器特殊处理`);
               
@@ -979,8 +1264,54 @@ function initScript() {
               chatInput.innerHTML = `<p>${inputValue.replace(/\n/g, '</p><p>')}</p>`;
             }
           } else {
-            // 对于其他 contenteditable 的 div (主要是 Gemini)
-            chatInput.innerHTML = inputValue.replace(/\n/g, '<br>');
+            // 判断是否为ProseMirror编辑器（ChatGPT和Grok使用）
+            if (chatInput.classList.contains('ProseMirror') || chatInput.id === 'prompt-textarea') {
+              console.log('ChatAB: 检测到ProseMirror编辑器，使用p标签格式');
+              
+              // 检查是否是Grok的TipTap编辑器
+              const isGrokTipTap = isGrok && chatInput.classList.contains('tiptap');
+              
+              const paragraphs = inputValue.split('\n');
+              let formattedHTML = '';
+              
+              paragraphs.forEach((paragraph, index) => {
+                if (paragraph.trim() === '') {
+                  // 空行处理
+                  if (isGrokTipTap) {
+                    // Grok TipTap格式的空行
+                    formattedHTML += '<p data-placeholder="What do you want to know?" class="is-empty is-editor-empty"><br class="ProseMirror-trailingBreak"></p>';
+                  } else {
+                    // ChatGPT格式的空行
+                    formattedHTML += '<p><br class="ProseMirror-trailingBreak"></p>';
+                  }
+                } else {
+                  // 非空行处理
+                  if (isGrokTipTap && index === 0 && paragraphs.length === 1) {
+                    // Grok TipTap格式：单行文本，移除placeholder属性
+                    formattedHTML += `<p>${paragraph}</p>`;
+                  } else {
+                    // 标准格式
+                    formattedHTML += `<p>${paragraph}</p>`;
+                  }
+                }
+              });
+              
+              chatInput.innerHTML = formattedHTML;
+              
+              // 对于Grok TipTap编辑器，需要移除placeholder相关的类
+              if (isGrokTipTap && inputValue.trim()) {
+                // 移除空编辑器的类
+                const firstP = chatInput.querySelector('p');
+                if (firstP) {
+                  firstP.classList.remove('is-empty', 'is-editor-empty');
+                  firstP.removeAttribute('data-placeholder');
+                }
+              }
+            } else {
+              // 对于其他 contenteditable 的 div (主要是 Gemini)
+              chatInput.innerHTML = inputValue.replace(/\n/g, '<br>');
+            }
+            
             // 触发输入事件
             const inputEvent = new Event('input', { bubbles: true });
             chatInput.dispatchEvent(inputEvent);
@@ -992,7 +1323,7 @@ function initScript() {
         
         // 对于 Perplexity、Kimi、Tongyi、Yuanbao、Grok 和 Yiyan，如果没找到输入框，再等待一下再试
         if (isPerplexity || isKimi || isTongyi || isYuanbao || isGrok || isYiyan) {
-          setTimeout(function() {
+          setTimeout(async function() {
             console.log(`ChatAB: ${siteName} 二次尝试查找输入框`);
             let retryInput = null;
             
@@ -1035,11 +1366,21 @@ function initScript() {
                 }
               }
             } else if (isGrok) {
-              retryInput = document.querySelector('textarea[aria-label*="Ask Grok anything"]') ||
+              // Grok TipTap ProseMirror 重试选择器
+              retryInput = document.querySelector('div.tiptap.ProseMirror[contenteditable="true"]') ||
+                          document.querySelector('div.ProseMirror[contenteditable="true"].w-full') ||
+                          document.querySelector('div.tiptap[contenteditable="true"]') ||
+                          document.querySelector('div.ProseMirror[contenteditable="true"]') ||
+                          document.querySelector('div[contenteditable="true"][data-placeholder*="What do you want to know?"]') ||
+                          document.querySelector('div[contenteditable="true"].w-full.px-2') ||
+                          document.querySelector('div[contenteditable="true"][translate="no"]') ||
+                          // 备用方案：旧的textarea选择器
+                          document.querySelector('textarea[aria-label*="Ask Grok anything"]') ||
                           document.querySelector('textarea[aria-label*="Ask Grok"]') ||
                           document.querySelector('textarea[aria-label*="Grok"]') ||
                           document.querySelector('textarea.w-full.bg-transparent') ||
                           document.querySelector('textarea[dir="auto"]') ||
+                          document.querySelector('div[contenteditable="true"]') ||
                           document.querySelector('textarea');
             } else if (isYiyan) {
               retryInput = document.querySelector('.yc-editor[contenteditable="true"][data-lexical-editor="true"]') ||
@@ -1054,8 +1395,69 @@ function initScript() {
               console.log(`ChatAB: ${siteName} 二次尝试找到输入框`);
               retryInput.focus();
               
-              // 特殊处理Yuanbao的Quill编辑器
-              if (isYuanbao && retryInput.classList.contains('ql-editor')) {
+              // 特殊处理Perplexity的Lexical编辑器
+              if (isPerplexity && (retryInput.getAttribute('data-lexical-editor') === 'true' || retryInput.id === 'ask-input')) {
+                console.log('ChatAB: Perplexity 二次尝试 - Lexical编辑器特殊处理');
+                
+                try {
+                  // 优先尝试使用 document.execCommand 插入文本
+                  if (document.execCommand) {
+                    // 先清空内容
+                    document.execCommand('selectAll', false, null);
+                    document.execCommand('delete', false, null);
+                    
+                    // 插入文本，让浏览器自动处理换行
+                    document.execCommand('insertText', false, inputValue);
+                    console.log('ChatAB: Perplexity二次尝试使用execCommand插入文本成功');
+                  } else {
+                    throw new Error('execCommand not supported');
+                  }
+                } catch (e) {
+                  console.log('ChatAB: 二次尝试execCommand失败，使用备用方案:', e);
+                  
+                  try {
+                    // 备用方案1：模拟用户输入
+                    retryInput.innerHTML = '';
+                    retryInput.focus();
+                    
+                    // 创建一个文本节点并插入
+                    const textNode = document.createTextNode(inputValue);
+                    retryInput.appendChild(textNode);
+                    
+                    console.log('ChatAB: Perplexity二次尝试使用文本节点插入成功');
+                  } catch (e2) {
+                    console.log('ChatAB: 二次尝试文本节点插入失败，使用最后备用方案:', e2);
+                    
+                    // 最后备用方案：使用简单的 <br> 标签处理换行
+                    retryInput.innerHTML = '';
+                    const formattedHTML = inputValue.replace(/\n/g, '<br>');
+                    retryInput.innerHTML = formattedHTML;
+                  }
+                }
+                
+                // 触发必要的事件
+                ['input', 'change', 'keyup', 'paste'].forEach(eventType => {
+                  const event = new Event(eventType, { bubbles: true });
+                  retryInput.dispatchEvent(event);
+                });
+              } else if (isYiyan && retryInput.getAttribute('data-lexical-editor') === 'true') {
+                console.log(`ChatAB: ${siteName} 二次尝试 - Lexical编辑器特殊处理`);
+                if (document.execCommand) {
+                  document.execCommand('insertText', false, inputValue);
+                } else {
+                  // 使用简单的Lexical格式
+                  const formattedText = inputValue.split('\n').map(line => 
+                    line.trim() ? `<p dir="ltr"><span data-lexical-text="true">${line}</span></p>` : '<p dir="ltr"><br></p>'
+                  ).join('');
+                  retryInput.innerHTML = formattedText;
+                }
+                
+                // 触发Lexical特定事件
+                ['input', 'change', 'keyup'].forEach(eventType => {
+                  const event = new Event(eventType, { bubbles: true });
+                  retryInput.dispatchEvent(event);
+                });
+              } else if (isYuanbao && retryInput.classList.contains('ql-editor')) {
                 console.log(`ChatAB: ${siteName} 二次尝试 - Quill编辑器特殊处理`);
                 if (document.execCommand) {
                   document.execCommand('insertText', false, inputValue);
@@ -1071,20 +1473,41 @@ function initScript() {
                   const event = new Event(eventType, { bubbles: true });
                   retryInput.dispatchEvent(event);
                 });
-              } else if (isYiyan && retryInput.getAttribute('data-lexical-editor') === 'true') {
-                // 特殊处理Yiyan的Lexical编辑器
-                console.log(`ChatAB: ${siteName} 二次尝试 - Lexical编辑器特殊处理`);
+              } else if (isGrok && (retryInput.classList.contains('tiptap') || retryInput.classList.contains('ProseMirror'))) {
+                // 特殊处理Grok的TipTap ProseMirror编辑器
+                console.log(`ChatAB: ${siteName} 二次尝试 - TipTap ProseMirror编辑器特殊处理`);
+                
+                // 先清空内容
+                retryInput.innerHTML = '';
+                
                 if (document.execCommand) {
                   document.execCommand('insertText', false, inputValue);
                 } else {
-                  // 使用Yiyan的Lexical格式
-                  const formattedText = inputValue.split('\n').map(line => 
-                    line ? `<p class="yc-editor-paragraph">${line}</p>` : '<p class="yc-editor-paragraph"><br></p>'
-                  ).join('');
-                  retryInput.innerHTML = formattedText;
+                  // 使用Grok TipTap格式
+                  const paragraphs = inputValue.split('\n');
+                  let formattedHTML = '';
+                  
+                  paragraphs.forEach((paragraph, index) => {
+                    if (paragraph.trim() === '') {
+                      formattedHTML += '<p data-placeholder="What do you want to know?" class="is-empty is-editor-empty"><br class="ProseMirror-trailingBreak"></p>';
+                    } else {
+                      formattedHTML += `<p>${paragraph}</p>`;
+                    }
+                  });
+                  
+                  retryInput.innerHTML = formattedHTML;
+                  
+                  // 移除placeholder相关的类
+                  if (inputValue.trim()) {
+                    const firstP = retryInput.querySelector('p');
+                    if (firstP) {
+                      firstP.classList.remove('is-empty', 'is-editor-empty');
+                      firstP.removeAttribute('data-placeholder');
+                    }
+                  }
                 }
                 
-                // 触发Lexical特定事件
+                // 触发TipTap特定事件
                 ['input', 'change', 'keyup'].forEach(eventType => {
                   const event = new Event(eventType, { bubbles: true });
                   retryInput.dispatchEvent(event);
