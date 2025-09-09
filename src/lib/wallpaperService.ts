@@ -205,7 +205,7 @@ class WallpaperService {
       const img = await new Promise<HTMLImageElement>((resolve, reject) => {
         const image = new Image();
         image.onload = () => resolve(image);
-        image.onerror = (e) => reject(new Error('Image load failed'));
+        image.onerror = () => reject(new Error('Image load failed'));
         image.src = objectUrl;
         // 添加超时
         setTimeout(() => reject(new Error('Image load timeout')), 10000);
@@ -349,8 +349,6 @@ class WallpaperService {
 
     if (settings.mode === 'daily') {
       wallpaper = await this.getTodayWallpaper();
-    } else if (settings.mode === 'hourly') {
-      wallpaper = await this.getRandomWallpaper();
     }
 
     if (wallpaper) {
@@ -421,7 +419,12 @@ class WallpaperService {
         const today = await this.getTodayWallpaper();
         if (today) {
           // 生成缩略图
-          const thumb = await this.getOrCreateThumbnail(today.url);
+          let thumb: string | null = null;
+          try {
+            thumb = await this.getOrCreateThumbnail(today.url);
+          } catch (error) {
+            console.warn('Failed to generate thumbnail during initialization:', error);
+          }
           const updated: WallpaperData = {
             ...today,
             source: 'daily',
@@ -442,7 +445,12 @@ class WallpaperService {
     } else {
       const today = await this.getTodayWallpaper();
       if (today) {
-        const thumb = await this.getOrCreateThumbnail(today.url);
+        let thumb: string | null = null;
+        try {
+          thumb = await this.getOrCreateThumbnail(today.url);
+        } catch (error) {
+          console.warn('Failed to generate thumbnail during initialization:', error);
+        }
         const updated: WallpaperData = {
           ...today,
           source: 'daily',
