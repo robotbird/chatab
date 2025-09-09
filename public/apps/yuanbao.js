@@ -112,6 +112,124 @@ class YuanbaoHandler extends BaseHandler {
   }
 
   /**
+   * 获取 Yuanbao 特定的发送按钮选择器
+   * @returns {Array<string>} 选择器数组
+   */
+  getSendButtonSelectors() {
+    return [
+      '#yuanbao-send-btn',                          // Yuanbao 特有的发送按钮 ID
+      'a[id="yuanbao-send-btn"]',                   // 带 ID 的 a 标签
+      '.style__send-btn___P9SGw',                   // Yuanbao 特有的样式类
+      'a[class*="send-btn"]',                       // 包含 send-btn 的 a 标签
+      '.hyc-common-icon.iconfont.icon-send',        // 发送图标的完整类名
+      '.icon-send',                                 // 发送图标类
+      'a:has(.icon-send)',                          // 包含发送图标的 a 标签
+      'a:has(.hyc-common-icon)',                    // 包含通用图标的 a 标签
+      '[class*="send-btn"]',                        // 任何包含 send-btn 的元素
+      ...super.getSendButtonSelectors()             // 继承父类的通用选择器
+    ];
+  }
+
+  /**
+   * 重写发送消息方法，优化重试逻辑为 3 次
+   * @param {HTMLElement} inputElement - 输入框元素
+   * @returns {Promise<boolean>} 发送是否成功
+   */
+  async sendMessage(inputElement) {
+    this.utils.log(`${this.siteName}: 开始发送消息`);
+    
+    // 使用 3 次重试的按钮发送
+    const buttonSuccess = await this.sendByButtonWithRetry(3);
+    if (buttonSuccess) {
+      return true;
+    }
+    
+    // 按钮发送失败，尝试键盘发送
+    const keyboardSuccess = await this.sendByKeyboard(inputElement);
+    return keyboardSuccess;
+  }
+
+  /**
+   * 通过按钮发送（带重试逻辑）
+   * @param {number} maxRetries - 最大重试次数
+   * @returns {Promise<boolean>}
+   */
+  async sendByButtonWithRetry(maxRetries = 3) {
+    const selectors = this.getSendButtonSelectors();
+    
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      this.utils.log(`${this.siteName}: 尝试查找发送按钮，第 ${attempt}/${maxRetries} 次`);
+      
+      const button = this.utils.findAvailableButton(selectors, 5);
+      
+      if (button) {
+        try {
+          // 确保按钮可见并可点击
+          button.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          await this.utils.wait(200);
+          
+          // 对于 a 标签，尝试多种点击方式
+          if (button.tagName.toLowerCase() === 'a') {
+            // 先尝试阻止默认行为并手动触发点击
+            const clickEvent = new MouseEvent('click', {
+              bubbles: true,
+              cancelable: true,
+              view: window
+            });
+            button.dispatchEvent(clickEvent);
+          } else {
+            button.click();
+          }
+          
+          this.utils.log(`${this.siteName}: 点击发送按钮成功`);
+          return true;
+        } catch (e) {
+          this.utils.log(`${this.siteName}: 点击发送按钮失败: ${e.message}`);
+        }
+      } else {
+        this.utils.log(`${this.siteName}: 第 ${attempt} 次未找到可用的发送按钮`);
+        
+        // 调试信息：输出页面上的可能按钮
+        if (attempt === 1) {
+          this.debugSendButtons();
+        }
+      }
+      
+      // 如果不是最后一次尝试，等待一段时间再重试
+      if (attempt < maxRetries) {
+        await this.utils.wait(800);
+      }
+    }
+    
+    this.utils.log(`${this.siteName}: ${maxRetries} 次尝试后仍未找到可用的发送按钮`);
+    return false;
+  }
+
+  /**
+   * 调试发送按钮信息
+   */
+  debugSendButtons() {
+    this.utils.log(`${this.siteName}: 调试发送按钮信息`);
+    
+    // 查找所有可能的发送按钮
+    const possibleButtons = document.querySelectorAll('a, button, [class*="send"], [id*="send"], .icon-send, [class*="btn"]');
+    
+    this.utils.log(`${this.siteName}: 找到 ${possibleButtons.length} 个可能的按钮元素`);
+    
+    Array.from(possibleButtons).slice(0, 10).forEach((btn, index) => {
+      this.utils.log(`  按钮 ${index + 1}:`, {
+        tagName: btn.tagName,
+        id: btn.id,
+        className: btn.className,
+        textContent: btn.textContent?.trim()?.substring(0, 50),
+        disabled: btn.disabled || btn.hasAttribute('disabled'),
+        visible: btn.offsetParent !== null,
+        innerHTML: btn.innerHTML.substring(0, 100)
+      });
+    });
+  }
+
+  /**
    * Yuanbao 的 Quill 编辑器特殊处理
    */
   async fillContentEditable(element, text) {

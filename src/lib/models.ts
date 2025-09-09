@@ -72,13 +72,13 @@ export const originalModels: ModelInfo[] = [
     url: "https://grok.com",
     link: "https://grok.com"
   },
-  {
-    id: "yiyan",
-    name: "Yiyan",
-    icon: "/logo/yiyan.svg",
-    url: "https://yiyan.baidu.com",
-    link: "https://yiyan.baidu.com"
-  }
+  // {  放弃支持百度这种垃圾公司
+  //   id: "yiyan",
+  //   name: "Yiyan",
+  //   icon: "/logo/yiyan.svg",
+  //   url: "https://yiyan.baidu.com",
+  //   link: "https://yiyan.baidu.com"
+  // }
 ];
 
 // 应用开关状态管理
