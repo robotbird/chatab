@@ -55,6 +55,78 @@ class KimiHandler extends BaseHandler {
   }
 
   /**
+   * 获取 Kimi 特定的发送按钮选择器
+   * @returns {Array<string>} 选择器数组
+   */
+  getSendButtonSelectors() {
+    return [
+      '.send-button',                    // Kimi 特有的发送按钮类
+      '.send-button svg',                // 发送按钮内的 SVG 图标
+      'div[class*="send-button"]',       // 包含 send-button 类的 div
+      'button[class*="send"]',           // 包含 send 的按钮
+      ...super.getSendButtonSelectors()  // 继承父类的通用选择器
+    ];
+  }
+
+  /**
+   * 重写发送消息方法，优化重试逻辑为 3 次
+   * @param {HTMLElement} inputElement - 输入框元素
+   * @returns {Promise<boolean>} 发送是否成功
+   */
+  async sendMessage(inputElement) {
+    this.utils.log(`${this.siteName}: 开始发送消息`);
+    
+    // 使用 3 次重试的按钮发送
+    const buttonSuccess = await this.sendByButtonWithRetry(3);
+    if (buttonSuccess) {
+      return true;
+    }
+    
+    // 按钮发送失败，尝试键盘发送
+    const keyboardSuccess = await this.sendByKeyboard(inputElement);
+    return keyboardSuccess;
+  }
+
+  /**
+   * 通过按钮发送（带重试逻辑）
+   * @param {number} maxRetries - 最大重试次数
+   * @returns {Promise<boolean>}
+   */
+  async sendByButtonWithRetry(maxRetries = 3) {
+    const selectors = this.getSendButtonSelectors();
+    
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      this.utils.log(`${this.siteName}: 尝试查找发送按钮，第 ${attempt}/${maxRetries} 次`);
+      
+      const button = this.utils.findAvailableButton(selectors, 5);
+      
+      if (button) {
+        try {
+          // 确保按钮可见并可点击
+          button.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          await this.utils.wait(200);
+          
+          button.click();
+          this.utils.log(`${this.siteName}: 点击发送按钮成功`);
+          return true;
+        } catch (e) {
+          this.utils.log(`${this.siteName}: 点击发送按钮失败: ${e.message}`);
+        }
+      } else {
+        this.utils.log(`${this.siteName}: 第 ${attempt} 次未找到可用的发送按钮`);
+      }
+      
+      // 如果不是最后一次尝试，等待一段时间再重试
+      if (attempt < maxRetries) {
+        await this.utils.wait(800);
+      }
+    }
+    
+    this.utils.log(`${this.siteName}: ${maxRetries} 次尝试后仍未找到可用的发送按钮`);
+    return false;
+  }
+
+  /**
    * Kimi 的 Lexical 编辑器特殊处理
    */
   async fillContentEditable(element, text) {

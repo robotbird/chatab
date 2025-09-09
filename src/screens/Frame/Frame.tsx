@@ -44,7 +44,13 @@ declare global {
 }
 
 export const Frame = (): JSX.Element => {
-  const [selectedModel, setSelectedModel] = useState("chatgpt");
+  // 从 recentModels 中获取最后使用的模型作为初始值，如果没有则默认为 chatgpt
+  const getInitialSelectedModel = () => {
+    const recent = getRecentModels();
+    return recent.length > 0 ? recent[0] : "chatgpt";
+  };
+  
+  const [selectedModel, setSelectedModel] = useState(getInitialSelectedModel());
   const [inputValue, setInputValue] = useState("");
   const [placeholder, setPlaceholder] = useState("Ask anything");
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
