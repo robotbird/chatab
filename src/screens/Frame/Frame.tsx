@@ -282,7 +282,7 @@ export const Frame = (): JSX.Element => {
             <Settings className={`w-5 h-5 ${isDark ? 'text-gray-300' : 'text-gray-600'}`} />
           </button>
         </div>
-        <Card className={`relative p-2 rounded-[20px] min-h-[120px] ${isDark ? 'bg-gray-800 border-gray-700' : 'bg-white'}`}>
+        <Card className={`relative p-2 rounded-[20px] min-h-[120px] ${isDark ? 'bg-gray-800/90 border-gray-700' : 'bg-white/80'}`}>
           <CardContent className="p-0 flex flex-col">
             
             {/* Main content area - input field */}
