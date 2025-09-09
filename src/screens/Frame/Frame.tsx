@@ -277,7 +277,7 @@ export const Frame = (): JSX.Element => {
         <div className="absolute right-2 top-[-40px] flex gap-2">
           <button
             onClick={() => setIsSettingsOpen(true)}
-            className="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
+            className="p-2 rounded-full bg-gray-200/30 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
           >
             <Settings className={`w-5 h-5 ${isDark ? 'text-gray-300' : 'text-gray-600'}`} />
           </button>
