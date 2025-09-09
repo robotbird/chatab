@@ -48,7 +48,23 @@
         "https://grok.com/*",
         "https://yiyan.baidu.com/*"
       ],
-      "js": ["contentScript.js"]
+      "js": [
+        "apps/constants.js",
+        "apps/utils.js",
+        "apps/BaseHandler.js",
+        "apps/chatgpt.js",
+        "apps/deepseek.js",
+        "apps/gemini.js",
+        "apps/doubao.js",
+        "apps/perplexity.js",
+        "apps/kimi.js",
+        "apps/tongyi.js",
+        "apps/yuanbao.js",
+        "apps/grok.js",
+        "apps/yiyan.js",
+        "apps/HandlerFactory.js",
+        "contentScript.js"
+      ]
     }
   ]
 } 
