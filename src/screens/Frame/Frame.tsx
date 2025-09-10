@@ -270,18 +270,18 @@ export const Frame = (): JSX.Element => {
   };
 
   return (
-    <div className={`transition-colors duration-200 bg-transparent flex flex-col items-center justify-center w-full min-h-screen`}>
+    <div className={`transition-colors duration-200 bg-transparent flex flex-col items-center justify-center w-full min-h-screen relative`}>
+      {/* Settings Button - positioned relative to the entire page */}
+      <div className="absolute top-[30px] right-[30px] flex gap-2 z-10">
+        <button
+          onClick={() => setIsSettingsOpen(true)}
+          className="p-2 rounded-full bg-gray-200/30 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
+        >
+          <Settings className={`w-5 h-5 ${isDark ? 'text-gray-300' : 'text-gray-600'}`} />
+        </button>
+      </div>
+      
       <div className="w-full max-w-[800px] mx-auto relative">
- 
-        
-        <div className="absolute right-2 top-[-40px] flex gap-2">
-          <button
-            onClick={() => setIsSettingsOpen(true)}
-            className="p-2 rounded-full bg-gray-200/30 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
-          >
-            <Settings className={`w-5 h-5 ${isDark ? 'text-gray-300' : 'text-gray-600'}`} />
-          </button>
-        </div>
         <Card className={`relative p-2 rounded-[20px] min-h-[120px] ${isDark ? 'bg-gray-800/90 border-gray-700' : 'bg-white/80'}`}>
           <CardContent className="p-0 flex flex-col">
             
