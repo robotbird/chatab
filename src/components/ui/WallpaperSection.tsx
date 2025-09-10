@@ -201,7 +201,7 @@ export const WallpaperSection: React.FC<WallpaperSectionProps> = ({ isDark }) =>
         </div>
 
         {/* 壁纸设置下拉选项 */}
-        <div>
+        {/* <div>
           <label className={`block text-xs font-medium mb-2 ${
             isDark ? 'text-gray-300' : 'text-gray-600'
           }`}>
@@ -229,9 +229,10 @@ export const WallpaperSection: React.FC<WallpaperSectionProps> = ({ isDark }) =>
               isDark ? 'text-gray-400' : 'text-gray-500'
             }`} />
           </div>
-          
-     
-        </div>
+        </div> */}
+
+
+
       </div>
     </div>
   );
