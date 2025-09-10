@@ -343,6 +343,7 @@ export const Frame = (): JSX.Element => {
                         target="_blank"
                         className="ml-2 w-5 h-5 opacity-100"
                         style={{ maxHeight: '1.5em' }}
+                        isDark={isDark}
                       />
                     </div>
                   )}
