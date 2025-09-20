@@ -392,7 +392,7 @@ export const Frame = (): JSX.Element => {
                         return (
                           <div
                             key={modelId}
-                            className={`w-6 h-6 rounded-full flex items-center justify-center ${isDark ? 'bg-gray-600' : 'bg-white'} border border-gray-300`}
+                            className={`w-6 h-6 rounded-full flex items-center justify-center ${isDark ? 'bg-gray-600' : 'bg-white'}`}
                             style={{
                               marginLeft: index > 0 ? '-8px' : '0',
                               zIndex: selectedModels.length - index,
@@ -409,7 +409,7 @@ export const Frame = (): JSX.Element => {
                       })}
                       {selectedModels.length > 3 && (
                         <div
-                          className={`w-6 h-6 rounded-full flex items-center justify-center ${isDark ? 'bg-gray-600 text-gray-200' : 'bg-white text-gray-600'} border border-gray-300 text-xs font-medium`}
+                          className={`w-6 h-6 rounded-full flex items-center justify-center ${isDark ? 'bg-gray-600 text-gray-200' : 'bg-white text-gray-600'} text-xs font-medium`}
                           style={{
                             marginLeft: '-8px',
                             zIndex: 0,
@@ -431,7 +431,7 @@ export const Frame = (): JSX.Element => {
                           return (
                             <div
                               key={modelId}
-                              className={`w-5 h-5 rounded-full flex items-center justify-center ${isDark ? 'bg-gray-600' : 'bg-white'} border border-gray-300`}
+                              className={`w-5 h-5 rounded-full flex items-center justify-center ${isDark ? 'bg-gray-600' : 'bg-white'}`}
                               style={{
                                 marginLeft: index > 0 ? '-6px' : '0',
                                 zIndex: selectedModels.length - index,
