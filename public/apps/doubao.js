@@ -35,6 +35,49 @@ class DoubaoHandler extends BaseHandler {
   }
 
   /**
+   * 等待页面加载完成
+   */
+  async waitForPageLoad() {
+    // 等待DOM完全加载
+    if (document.readyState !== 'complete') {
+      await new Promise(resolve => {
+        if (document.readyState === 'complete') {
+          resolve();
+        } else {
+          window.addEventListener('load', resolve, { once: true });
+        }
+      });
+    }
+    
+    // 额外等待一段时间，确保React/Vue等框架渲染完成
+    await this.utils.wait(1000);
+    
+    // 等待Doubao输入框加载
+    let retries = 0;
+    const maxRetries = 10;
+    
+    while (retries < maxRetries) {
+      const inputElements = document.querySelectorAll('textarea[data-testid="chat_input_input"], textarea.semi-input-textarea');
+      if (inputElements.length > 0) {
+        break;
+      }
+      
+      await this.utils.wait(500);
+      retries++;
+    }
+  }
+
+  /**
+   * 重写查找输入框方法，添加页面加载等待
+   */
+  async findInputElement() {
+    // 等待页面加载完成
+    await this.waitForPageLoad();
+    
+    return super.findInputElement();
+  }
+
+  /**
    * Doubao 专用发送逻辑，优先使用回车键
    */
   async sendMessage(inputElement) {

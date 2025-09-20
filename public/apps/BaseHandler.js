@@ -210,7 +210,7 @@ class BaseHandler {
       return;
     }
 
-    const inputElement = this.findInputElement();
+    const inputElement = await this.findInputElement();
     if (!inputElement) {
       // 如果没找到输入框，尝试重试
       await this.retryHandle(inputValue);
@@ -226,9 +226,8 @@ class BaseHandler {
     // 发送消息
     const success = await this.sendMessage(inputElement);
     
-    if (success) {
-      this.utils.clearStorage();
-    }
+    // 注意：不在这里清空storage，让调用方决定何时清空
+    // 这样可以支持多模型发送时共享同一个storage内容
   }
 
   /**
@@ -239,13 +238,13 @@ class BaseHandler {
     this.utils.log(`${this.siteName}: 二次尝试查找输入框`);
     await this.utils.wait(2000);
     
-    const retryInput = this.findInputElement();
+    const retryInput = await this.findInputElement();
     if (retryInput) {
       this.utils.log(`${this.siteName}: 二次尝试找到输入框`);
       await this.fillText(retryInput, inputValue);
       await this.utils.wait(800);
       await this.sendMessage(retryInput);
-      this.utils.clearStorage();
+      // 注意：不在这里清空storage，让调用方决定何时清空
     } else {
       this.utils.log(`${this.siteName}: 二次尝试仍然没有找到输入框`);
     }

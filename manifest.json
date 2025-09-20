@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "ChaTab",
-  "version": "1.0.2",
+  "version": "1.1.0",
   "description": "Quickly submit queries to ChatGPT, Gemini, DeepSeek, Perplexity, Doubao, and more — all in one place.",
   "author": "ChaTab",
   "chrome_url_overrides": {

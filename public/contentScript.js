@@ -3,8 +3,8 @@
  * 主入口文件，负责网站检测和调度
  */
 
-// 全局变量
-let scriptExecuted = false;
+// 全局变量 - 使用Set来跟踪已执行的页面，避免重复执行
+let executedPages = new Set();
 let handlerFactory = null;
 
 /**
@@ -77,12 +77,15 @@ function initScript() {
 function ensureScriptExecution() {
   console.log('ChatAB: 准备启动脚本，当前document.readyState:', document.readyState);
 
+  // 生成当前页面的唯一标识
+  const pageId = window.location.href + '_' + Date.now();
+  
   // 1. DOMContentLoaded - 比load事件更早触发
   if (document.readyState === 'loading') {
     console.log('ChatAB: 文档正在加载，等待DOMContentLoaded事件');
     document.addEventListener('DOMContentLoaded', function() {
-      if (!scriptExecuted) {
-        scriptExecuted = true;
+      if (!executedPages.has(pageId)) {
+        executedPages.add(pageId);
         console.log('ChatAB: 通过DOMContentLoaded启动');
         initScript();
       }
@@ -90,14 +93,14 @@ function ensureScriptExecution() {
   } else {
     // 2. 文档已经加载完成，直接执行
     console.log('ChatAB: 文档已加载，直接启动，readyState:', document.readyState);
-    scriptExecuted = true;
+    executedPages.add(pageId);
     initScript();
   }
 
   // 3. 备用方案 - window.load事件
   window.addEventListener('load', function() {
-    if (!scriptExecuted) {
-      scriptExecuted = true;
+    if (!executedPages.has(pageId)) {
+      executedPages.add(pageId);
       console.log('ChatAB: 通过window.load启动');
       initScript();
     }
@@ -105,8 +108,8 @@ function ensureScriptExecution() {
 
   // 4. 最后的备用方案 - 延迟执行
   setTimeout(function() {
-    if (!scriptExecuted) {
-      scriptExecuted = true;
+    if (!executedPages.has(pageId)) {
+      executedPages.add(pageId);
       console.log('ChatAB: 通过延迟方案启动');
       initScript();
     }
