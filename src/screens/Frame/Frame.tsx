@@ -384,10 +384,10 @@ export const Frame = (): JSX.Element => {
                     transition: 'max-width 0.2s cubic-bezier(0.4,0,0.2,1)' 
                   }}
                 >
-                  {/* 默认状态：显示多个选中模型的logo */}
+                  {/* 默认状态：显示所有选中模型的logo */}
                   {!isModelDropdownOpen && (
                     <div className="flex items-center">
-                      {selectedModels.slice(0, 3).map((modelId, index) => {
+                      {selectedModels.map((modelId, index) => {
                         const model = models.find(m => m.id === modelId);
                         return (
                           <div
@@ -407,18 +407,6 @@ export const Frame = (): JSX.Element => {
                           </div>
                         );
                       })}
-                      {selectedModels.length > 3 && (
-                        <div
-                          className={`w-6 h-6 rounded-full flex items-center justify-center ${isDark ? 'bg-gray-600 text-gray-200' : 'bg-white text-gray-600'} text-xs font-medium`}
-                          style={{
-                            marginLeft: '-8px',
-                            zIndex: 0,
-                            boxShadow: '0 1px 3px rgba(0,0,0,0.1)'
-                          }}
-                        >
-                          +{selectedModels.length - 3}
-                        </div>
-                      )}
                     </div>
                   )}
                   
