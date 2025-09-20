@@ -374,15 +374,18 @@ export const Frame = (): JSX.Element => {
                   className="relative inline-block"
                   onMouseEnter={handleModelDropdownMouseEnter}
                   onMouseLeave={handleModelDropdownMouseLeave}
+                  style={{
+                    width: isModelDropdownOpen ? 180 : (
+                      selectedModels.length === 0 ? 36 : 
+                      selectedModels.length === 1 ? 36 : 
+                      Math.min(160, 24 + selectedModels.length * 14)
+                    ),
+                    transition: 'width 0.2s cubic-bezier(0.4,0,0.2,1)'
+                  }}
                 >
                   {/* 按钮内容 */}
                 <div
-                    className={`h-[36px] ${isDark ? 'bg-gray-700' : 'bg-[#f2f2f2]'} rounded-full flex items-center justify-center group select-none transition-all duration-200 cursor-pointer`}
-                  style={{ 
-                    minWidth: 36, 
-                    maxWidth: isModelDropdownOpen ? 180 : Math.max(36, 20 + selectedModels.length * 18), 
-                    transition: 'max-width 0.2s cubic-bezier(0.4,0,0.2,1)' 
-                  }}
+                    className={`h-[36px] w-full ${isDark ? 'bg-gray-700' : 'bg-[#f2f2f2]'} rounded-full flex items-center justify-center group select-none transition-all duration-200 cursor-pointer`}
                 >
                   {/* 默认状态：显示所有选中模型的logo */}
                   {!isModelDropdownOpen && (
@@ -394,7 +397,7 @@ export const Frame = (): JSX.Element => {
                             key={modelId}
                             className={`w-6 h-6 rounded-full flex items-center justify-center ${isDark ? 'bg-gray-600' : 'bg-white'}`}
                             style={{
-                              marginLeft: index > 0 ? '-8px' : '0',
+                              marginLeft: index > 0 ? '-10px' : '0',
                               zIndex: selectedModels.length - index,
                               boxShadow: '0 1px 3px rgba(0,0,0,0.1)'
                             }}
