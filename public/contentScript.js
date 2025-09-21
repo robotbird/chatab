@@ -16,12 +16,43 @@ function initScript() {
   const url = new URL(window.location.href);
   console.log('ChatAB: 解析后的URL对象:', url);
   
-  // 检查是否已加载必要的依赖
-  if (!window.ChatABConstants || !window.ChatABUtils || !window.BaseHandler || !window.HandlerFactory) {
-    console.error('ChatAB: 依赖文件未完全加载，等待加载完成...');
-    setTimeout(initScript, 1000);
+  // 检查是否已加载必要的依赖，增加重试计数器
+  if (!window.initScriptRetryCount) {
+    window.initScriptRetryCount = 0;
+  }
+  
+  // 检查基础依赖
+  const basicDeps = ['ChatABConstants', 'ChatABUtils', 'BaseHandler', 'HandlerFactory'];
+  const missingBasicDeps = basicDeps.filter(dep => !window[dep]);
+  
+  // 检查处理器类（可选，不阻塞基础功能）
+  const handlerClasses = [
+    'ChatGPTHandler', 'DeepSeekHandler', 'GeminiHandler', 'DoubaoHandler',
+    'PerplexityHandler', 'KimiHandler', 'TongyiHandler', 'YuanbaoHandler',
+    'GrokHandler', 'YiyanHandler'
+  ];
+  const missingHandlers = handlerClasses.filter(handler => !window[handler]);
+  
+  if (missingBasicDeps.length > 0) {
+    window.initScriptRetryCount++;
+    
+    if (window.initScriptRetryCount > 10) {
+      console.error('ChatAB: 基础依赖文件加载失败，已重试10次，停止重试。缺少的依赖:', missingBasicDeps.join(', '));
+      return;
+    }
+    
+    console.log(`ChatAB: 基础依赖未完全加载，等待加载完成... (第${window.initScriptRetryCount}次重试)，缺少: ${missingBasicDeps.join(', ')}`);
+    setTimeout(initScript, 500);
     return;
   }
+  
+  // 如果有处理器类缺失，记录警告但不阻塞
+  if (missingHandlers.length > 0) {
+    console.warn('ChatAB: 以下处理器类尚未加载，可能影响某些网站的功能:', missingHandlers.join(', '));
+  }
+  
+  // 重置重试计数器
+  window.initScriptRetryCount = 0;
   
   // 创建处理器工厂
   if (!handlerFactory) {
@@ -48,7 +79,7 @@ function initScript() {
     const inputValue = result.inputValue;
     
     if (!inputValue || !inputValue.trim()) {
-      console.log('ChatAB: 没有找到要提交的内容');
+      console.log('ChatAB: 没有找到要提交的内容，跳过处理');
       return;
     }
     

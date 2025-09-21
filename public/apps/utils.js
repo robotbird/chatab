@@ -214,7 +214,6 @@ class ChatABUtils {
     
     return true;
   }
-}
 
   /**
    * 创建极简扫描效果
