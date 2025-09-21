@@ -25,6 +25,7 @@ declare global {
         local: {
           get: (keys: string[], callback: (result: { [key: string]: any }) => void) => void;
           set: (items: { [key: string]: any }, callback?: () => void) => void;
+          remove: (keys: string | string[], callback?: () => void) => void;
         };
       };
       runtime: {
@@ -55,6 +56,7 @@ export const Frame = (): JSX.Element => {
   const [inputValue, setInputValue] = useState("");
   const [placeholder, setPlaceholder] = useState("Ask anything");
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [isSending, setIsSending] = useState(false); // 新增：发送状态管理
   const [isDark, setIsDark] = useState(() => {
     if (typeof window !== 'undefined') {
       const savedTheme = localStorage.getItem('theme') as 'light' | 'dark' | 'auto';
@@ -228,6 +230,12 @@ export const Frame = (): JSX.Element => {
       return;
     }
     
+    if (isSending) {
+      return; // 如果正在发送中，直接返回
+    }
+    
+    setIsSending(true); // 设置发送状态为true
+    
     if (selectedModels.length === 1) {
       // 单模型：直接跳转
       const model = models.find(m => m.id === selectedModels[0]);
@@ -235,7 +243,10 @@ export const Frame = (): JSX.Element => {
         if (window.chrome?.storage?.local) {
           window.chrome.storage.local.set({ inputValue: inputValue });
         }
-        window.location.href = model.url;
+        // 延迟一小段时间显示禁用状态，然后跳转
+        setTimeout(() => {
+          window.location.href = model.url;
+        }, 100);
       }
     } else if (selectedModels.length > 1) {
       // 多模型：所有模型都在新标签页打开
@@ -259,13 +270,14 @@ export const Frame = (): JSX.Element => {
         }
       });
       
-      // 在所有模型都打开后清空storage和输入框
-      const totalDelay = selectedModels.length * 600 + 50000; // 最后一个模型打开后额外等待5秒，确保所有模型都有足够时间读取storage
+      // 在所有模型都打开后清空storage和输入框，并重置发送状态
+      const totalDelay = selectedModels.length * 600 + 5000; // 最后一个模型打开后额外等待5秒，确保所有模型都有足够时间读取storage
       setTimeout(() => {
         if (window.chrome?.storage?.local) {
           window.chrome.storage.local.remove(['inputValue']);
         }
         setInputValue(''); // 清空输入框
+        setIsSending(false); // 重置发送状态
       }, totalDelay);
     }
   };
@@ -513,15 +525,15 @@ export const Frame = (): JSX.Element => {
                 {/* Send Button */}
                 <button 
                   onClick={handleSend}
-                  className="cursor-pointer"
+                  className={`${isSending || !inputValue.trim() ? 'cursor-not-allowed' : 'cursor-pointer'}`}
+                  disabled={isSending || !inputValue.trim()}
                 >
                   <SendIcon 
                     size={36}
-                    className={`transition-all duration-200 hover:opacity-80 ${
-                      inputValue.trim() 
-                        ? (isDark ? 'text-white hover:text-gray-200' : 'text-black hover:text-gray-800')
-                        : (isDark ? 'text-gray-500 hover:text-gray-400' : 'text-gray-400 hover:text-gray-500')
-                    }`} 
+                    disabled={!inputValue.trim()}
+                    isSending={isSending}
+                    isDark={isDark}
+                    className="transition-all duration-200"
                   />
                 </button>
               </div>
