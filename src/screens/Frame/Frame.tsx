@@ -109,31 +109,8 @@ export const Frame = (): JSX.Element => {
     };
   }, []);
 
-  // 加载存储的输入内容
-  useEffect(() => {
-    const loadStoredData = async () => {
-      if (window.chrome?.storage?.local) {
-        try {
-          // Promise化Chrome Storage API
-          const chromeStorageGet = (keys: string[]): Promise<{ [key: string]: any }> => {
-            return new Promise((resolve) => {
-              window.chrome.storage.local.get(keys, resolve);
-            });
-          };
-
-          const result = await chromeStorageGet(['inputValue']);
-          
-          if (result.inputValue) {
-            setInputValue(result.inputValue);
-          }
-        } catch (error) {
-          console.error('ChatAB: 加载存储数据失败:', error);
-        }
-      }
-    };
-
-    loadStoredData();
-  }, []);
+  // 注释：移除了默认加载存储的输入内容的逻辑
+  // 现在tab页默认加载时不会从storage读取之前的输入数据
 
 
 

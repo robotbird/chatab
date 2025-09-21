@@ -54,83 +54,6 @@ class DeepSeekHandler extends BaseHandler {
     return inputElement;
   }
 
-  /**
-   * 创建极简扫描效果
-   * @param {HTMLElement} inputElement - 目标输入框
-   */
-  createScanOverlay(inputElement) {
-    // 获取输入框位置和尺寸
-    const rect = inputElement.getBoundingClientRect();
-    const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
-    const scrollLeft = window.pageXOffset || document.documentElement.scrollLeft;
-    
-    // 创建扫描柱（无背景容器）
-    const scanBar = document.createElement('div');
-    scanBar.id = 'deepseek-scan-bar';
-    scanBar.style.cssText = `
-      position: absolute;
-      top: ${rect.top + scrollTop}px;
-      left: ${rect.left + scrollLeft - 2}px;
-      width: 2px;
-      height: ${rect.height}px;
-      background: #00ff41;
-      z-index: 10000;
-      pointer-events: none;
-      opacity: 0;
-      animation: simple-scan 0.8s ease-out;
-    `;
-
-    // 添加CSS动画
-    const style = document.createElement('style');
-    style.textContent = `
-      @keyframes simple-scan {
-        0% { 
-          left: ${rect.left + scrollLeft - 2}px; 
-          opacity: 0; 
-        }
-        15% { 
-          opacity: 0.8; 
-        }
-        85% { 
-          opacity: 0.8; 
-        }
-        100% { 
-          left: ${rect.left + scrollLeft + rect.width}px; 
-          opacity: 0; 
-        }
-      }
-    `;
-    document.head.appendChild(style);
-
-    document.body.appendChild(scanBar);
-
-    return { scanBar, style };
-  }
-
-  /**
-   * 执行极简扫描动画
-   * @param {HTMLElement} inputElement - 目标输入框
-   */
-  async performScanAnimation(inputElement) {
-    this.utils.log('DeepSeek: 开始扫描动画');
-    
-    const { scanBar, style } = this.createScanOverlay(inputElement);
-
-    // 等待扫描动画完成
-    await this.utils.wait(800);
-
-    // 清理动画元素
-    setTimeout(() => {
-      if (scanBar && scanBar.parentNode) {
-        scanBar.parentNode.removeChild(scanBar);
-      }
-      if (style && style.parentNode) {
-        style.parentNode.removeChild(style);
-      }
-    }, 50);
-
-    this.utils.log('DeepSeek: 扫描动画完成');
-  }
 
   /**
    * 快速填充文本内容
@@ -230,11 +153,11 @@ class DeepSeekHandler extends BaseHandler {
    * @param {string} text - 要填充的文本
    */
   async fillText(inputElement, text) {
-    // 执行扫描动画
-    await this.performScanAnimation(inputElement);
-    
-    // 快速填充内容
-    await this.fastFillContent(inputElement, text);
+    // 使用utils中的扫描效果填充文本
+    await ChatABUtils.fillTextWithScan(inputElement, text, 'DeepSeek', async (element, content) => {
+      // 快速填充内容
+      await this.fastFillContent(element, content);
+    });
   }
 
   /**

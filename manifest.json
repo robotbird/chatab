@@ -53,6 +53,7 @@
       "js": [
         "apps/constants.js",
         "apps/utils.js",
+        "apps/ScannerEffect.js",
         "apps/BaseHandler.js",
         "apps/chatgpt.js",
         "apps/deepseek.js",
