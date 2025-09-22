@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "ChaTab",
   "version": "1.1.0",
-  "description": "Quickly submit queries to ChatGPT, Gemini, DeepSeek, Perplexity, Doubao, and more — all in one place.",
+  "description": "快速批量提交prompt到ChatGPT,Gemini,DeepSeek,Grok,Tongyi,Yuanbao,Doubao等官方应用界面，能够快速比较不同模型之间的回答区别.",
   "author": "ChaTab",
   "chrome_url_overrides": {
     "newtab": "index.html"
