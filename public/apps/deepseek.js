@@ -54,6 +54,112 @@ class DeepSeekHandler extends BaseHandler {
     return inputElement;
   }
 
+
+  /**
+   * 快速填充文本内容
+   * @param {HTMLElement} inputElement - 输入框元素
+   * @param {string} text - 要填充的文本
+   */
+  async fastFillContent(inputElement, text) {
+    if (!inputElement || !text) return;
+
+    this.utils.log(`DeepSeek: 快速填充内容: "${text}"`);
+    
+    // 确保输入框获得焦点
+    inputElement.focus();
+    
+    // 清空现有内容
+    await this.clearInputContent(inputElement);
+    
+    // 分批快速填充，营造数据流效果
+    const chunks = this.splitTextIntoChunks(text, 10);
+    
+    for (let i = 0; i < chunks.length; i++) {
+      const chunk = chunks[i];
+      
+      if (inputElement.tagName.toLowerCase() === 'textarea' || inputElement.tagName.toLowerCase() === 'input') {
+        inputElement.value += chunk;
+        const inputEvent = new Event('input', { bubbles: true });
+        inputElement.dispatchEvent(inputEvent);
+      } else if (inputElement.contentEditable === 'true') {
+        inputElement.textContent += chunk;
+        const inputEvent = new Event('input', { bubbles: true });
+        inputElement.dispatchEvent(inputEvent);
+      }
+      
+      // 短暂延迟营造数据流感觉
+      await this.utils.wait(50);
+    }
+
+    // 触发最终的事件确保状态同步
+    await this.triggerFinalEvents(inputElement);
+    
+    this.utils.log('DeepSeek: 快速填充完成');
+  }
+
+  /**
+   * 将文本分割成块
+   * @param {string} text 
+   * @param {number} chunkSize 
+   * @returns {string[]}
+   */
+  splitTextIntoChunks(text, chunkSize) {
+    const chunks = [];
+    for (let i = 0; i < text.length; i += chunkSize) {
+      chunks.push(text.slice(i, i + chunkSize));
+    }
+    return chunks;
+  }
+
+  /**
+   * 清空输入框内容
+   * @param {HTMLElement} inputElement 
+   */
+  async clearInputContent(inputElement) {
+    if (inputElement.tagName.toLowerCase() === 'textarea' || inputElement.tagName.toLowerCase() === 'input') {
+      // 对于普通输入框，先选中所有内容再删除
+      inputElement.select();
+      document.execCommand('delete');
+      inputElement.value = '';
+    } else if (inputElement.contentEditable === 'true') {
+      // 对于contenteditable，使用execCommand清空
+      inputElement.focus();
+      document.execCommand('selectAll');
+      document.execCommand('delete');
+    }
+    
+    // 触发change事件
+    const changeEvent = new Event('change', { bubbles: true });
+    inputElement.dispatchEvent(changeEvent);
+  }
+
+
+  /**
+   * 触发最终事件确保状态同步
+   * @param {HTMLElement} inputElement 
+   */
+  async triggerFinalEvents(inputElement) {
+    const finalEvents = ['input', 'change', 'blur', 'focus'];
+    for (const eventType of finalEvents) {
+      const event = new Event(eventType, { bubbles: true });
+      inputElement.dispatchEvent(event);
+      await this.utils.wait(10);
+    }
+  }
+
+  /**
+   * 重写填充文本方法，使用扫描效果
+   * @param {HTMLElement} inputElement - 输入框元素
+   * @param {string} text - 要填充的文本
+   */
+  async fillText(inputElement, text) {
+    // 使用utils中的扫描效果填充文本
+    await ChatABUtils.fillTextWithScan(inputElement, text, 'DeepSeek', async (element, content) => {
+      // 快速填充内容
+      await this.fastFillContent(element, content);
+    });
+  }
+
   /**
    * 获取 DeepSeek 特定的发送按钮选择器
    * @returns {Array<string>} 选择器数组

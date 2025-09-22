@@ -243,31 +243,152 @@ class YuanbaoHandler extends BaseHandler {
         
         // 聚焦编辑器
         element.focus();
+        await this.utils.wait(100);
         
-        // 尝试使用 document.execCommand 插入文本
-        if (document.execCommand) {
-          document.execCommand('insertText', false, text);
+        // 处理包含换行符的文本
+        if (text.includes('\n')) {
+          this.utils.log('Yuanbao: 检测到换行符，使用特殊处理方式');
+          await this.insertTextWithNewlines(element, text);
         } else {
-          // 备用方案：使用Quill格式
-          const formattedText = text.split('\n').map(line => 
-            line ? `<p>${line}</p>` : '<p><br></p>'
-          ).join('');
-          element.innerHTML = formattedText;
+          // 单行文本使用 execCommand
+          if (document.execCommand) {
+            document.execCommand('insertText', false, text);
+          } else {
+            element.innerHTML = `<p>${text}</p>`;
+          }
         }
         
         // 触发必要的事件
         await this.utils.triggerEvents(element, ['input', 'change', 'keyup', 'text-change']);
       } catch (e) {
         this.utils.log(`Yuanbao: Quill特殊处理失败，使用备用方法: ${e.message}`);
-        // 备用方案：简单的HTML格式
-        element.innerHTML = `<p>${text.replace(/\n/g, '</p><p>')}</p>`;
-        
-        await this.utils.triggerEvents(element, ['input', 'change', 'keyup']);
+        await this.fallbackTextInsertion(element, text);
       }
     } else {
       // 使用父类的默认处理
       await super.fillContentEditable(element, text);
     }
+  }
+
+  /**
+   * 插入包含换行符的文本到 Quill 编辑器
+   * @param {HTMLElement} element - Quill 编辑器元素
+   * @param {string} text - 包含换行符的文本
+   */
+  async insertTextWithNewlines(element, text) {
+    const lines = text.split('\n');
+    
+    // 方法1：尝试逐行插入
+    try {
+      for (let i = 0; i < lines.length; i++) {
+        const line = lines[i];
+        
+        if (document.execCommand) {
+          if (line.trim()) {
+            document.execCommand('insertText', false, line);
+          }
+          
+          // 如果不是最后一行，插入换行
+          if (i < lines.length - 1) {
+            // 尝试多种换行插入方式
+            if (!document.execCommand('insertLineBreak', false, null)) {
+              if (!document.execCommand('insertParagraph', false, null)) {
+                // 如果都失败，直接插入 <br> 或创建新段落
+                const selection = window.getSelection();
+                if (selection.rangeCount > 0) {
+                  const range = selection.getRangeAt(0);
+                  const br = document.createElement('br');
+                  range.insertNode(br);
+                  range.setStartAfter(br);
+                  range.collapse(true);
+                  selection.removeAllRanges();
+                  selection.addRange(range);
+                }
+              }
+            }
+          }
+        } else {
+          throw new Error('execCommand not supported');
+        }
+        
+        // 短暂等待确保DOM更新
+        await this.utils.wait(50);
+      }
+      
+      this.utils.log('Yuanbao: 逐行插入文本成功');
+    } catch (e) {
+      this.utils.log(`Yuanbao: 逐行插入失败，使用HTML格式: ${e.message}`);
+      // 方法2：使用HTML格式
+      const formattedText = lines.map(line => 
+        line.trim() ? `<p>${line}</p>` : '<p><br></p>'
+      ).join('');
+      element.innerHTML = formattedText;
+    }
+  }
+
+  /**
+   * 备用文本插入方案
+   * @param {HTMLElement} element - 编辑器元素
+   * @param {string} text - 文本内容
+   */
+  async fallbackTextInsertion(element, text) {
+    const lines = text.split('\n');
+    
+    // 尝试多种备用方案
+    const fallbackMethods = [
+      // 方案1：标准的 Quill 段落格式
+      () => {
+        const formattedText = lines.map(line => 
+          line.trim() ? `<p>${this.escapeHtml(line)}</p>` : '<p><br></p>'
+        ).join('');
+        element.innerHTML = formattedText;
+      },
+      
+      // 方案2：使用 div 标签
+      () => {
+        const formattedText = lines.map(line => 
+          line.trim() ? `<div>${this.escapeHtml(line)}</div>` : '<div><br></div>'
+        ).join('');
+        element.innerHTML = formattedText;
+      },
+      
+      // 方案3：简单的 br 换行
+      () => {
+        element.innerHTML = this.escapeHtml(text).replace(/\n/g, '<br>');
+      },
+      
+      // 方案4：纯文本 + textContent
+      () => {
+        element.textContent = text;
+      }
+    ];
+    
+    for (let i = 0; i < fallbackMethods.length; i++) {
+      try {
+        fallbackMethods[i]();
+        this.utils.log(`Yuanbao: 备用方案${i + 1}执行成功`);
+        break;
+      } catch (e) {
+        this.utils.log(`Yuanbao: 备用方案${i + 1}失败: ${e.message}`);
+        if (i === fallbackMethods.length - 1) {
+          this.utils.log('Yuanbao: 所有备用方案都失败了');
+        }
+      }
+    }
+    
+    // 触发事件
+    await this.utils.triggerEvents(element, ['input', 'change', 'keyup']);
+  }
+
+  /**
+   * HTML转义函数
+   * @param {string} text - 需要转义的文本
+   * @returns {string} - 转义后的文本
+   */
+  escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
   }
 }
 

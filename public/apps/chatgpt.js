@@ -62,6 +62,23 @@ class ChatGPTHandler extends BaseHandler {
   }
 
   /**
+   * 重写填充文本方法，使用扫描效果
+   * @param {HTMLElement} inputElement - 输入框元素
+   * @param {string} text - 要填充的文本
+   */
+  async fillText(inputElement, text) {
+    // 使用扫描效果填充文本
+    await this.utils.fillTextWithScan(inputElement, text, 'ChatGPT', async (element, content) => {
+      // 执行实际的文本填充
+      if (element.tagName.toLowerCase() === 'textarea' || element.tagName.toLowerCase() === 'input') {
+        await super.fillTextarea(element, content);
+      } else if (element.contentEditable === 'true') {
+        await this.fillContentEditable(element, content);
+      }
+    });
+  }
+
+  /**
    * ChatGPT 专用发送逻辑，优先使用回车键
    */
   async sendMessage(inputElement) {

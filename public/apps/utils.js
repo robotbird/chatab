@@ -144,9 +144,25 @@ class ChatABUtils {
    */
   static clearStorage() {
     setTimeout(() => {
-      chrome.storage.local.remove(['inputValue']);
+      chrome.storage.local.remove(['inputValue', 'multiModelClearTime', 'multiModelCount', 'multiModelProcessed']);
       console.log('ChatAB: 清空 storage');
     }, 1000);
+  }
+
+  /**
+   * 启动多模型超时检查定时器
+   */
+  static startMultiModelTimeoutCheck() {
+    // 每10秒检查一次是否有超时的多模型任务
+    setInterval(() => {
+      chrome.storage.local.get(['multiModelClearTime'], (result) => {
+        const { multiModelClearTime } = result;
+        if (multiModelClearTime && Date.now() > multiModelClearTime) {
+          console.log('ChatAB: 多模型处理超时，强制清空storage');
+          ChatABUtils.clearStorage();
+        }
+      });
+    }, 10000); // 每10秒检查一次
   }
 
   /**
@@ -170,6 +186,151 @@ class ChatABUtils {
     const textReduced = afterText.length < beforeText.length * 0.8; // 内容减少了80%以上
     return textCleared || textReduced;
   }
+
+  /**
+   * HTML转义函数，防止XSS攻击
+   * @param {string} text - 需要转义的文本
+   * @returns {string} - 转义后的文本
+   */
+  static escapeHtml(text) {
+    if (typeof text !== 'string') return '';
+    
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+  }
+
+  /**
+   * 检查元素是否可见
+   * @param {HTMLElement} element - 要检查的元素
+   * @returns {boolean} - 元素是否可见
+   */
+  static isElementVisible(element) {
+    if (!element) return false;
+    
+    // 检查元素是否在DOM中
+    if (!document.contains(element)) return false;
+    
+    // 检查元素的样式
+    const style = window.getComputedStyle(element);
+    if (style.display === 'none' || style.visibility === 'hidden' || style.opacity === '0') {
+      return false;
+    }
+    
+    // 检查元素的尺寸
+    const rect = element.getBoundingClientRect();
+    if (rect.width === 0 || rect.height === 0) {
+      return false;
+    }
+    
+    // 检查元素是否有offsetParent (除了fixed定位的元素)
+    if (!element.offsetParent && style.position !== 'fixed') {
+      return false;
+    }
+    
+    return true;
+  }
+
+  /**
+   * 创建极简扫描效果
+   * @param {HTMLElement} inputElement - 目标输入框
+   * @param {string} siteName - 网站名称（用于日志和ID）
+   * @returns {Object} 返回扫描元素和样式
+   */
+  static createScanOverlay(inputElement, siteName = 'Scanner') {
+    // 获取输入框位置和尺寸
+    const rect = inputElement.getBoundingClientRect();
+    const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+    const scrollLeft = window.pageXOffset || document.documentElement.scrollLeft;
+    
+    // 创建扫描柱（无背景容器）
+    const scanBar = document.createElement('div');
+    const scanId = `${siteName.toLowerCase()}-scan-bar`;
+    scanBar.id = scanId;
+    scanBar.style.cssText = `
+      position: absolute;
+      top: ${rect.top + scrollTop}px;
+      left: ${rect.left + scrollLeft - 2}px;
+      width: 2px;
+      height: ${rect.height}px;
+      background: #00ff41;
+      z-index: 10000;
+      pointer-events: none;
+      opacity: 0;
+      animation: ${scanId}-scan 0.8s ease-out;
+    `;
+
+    // 添加CSS动画
+    const style = document.createElement('style');
+    style.id = `${scanId}-style`;
+    style.textContent = `
+      @keyframes ${scanId}-scan {
+        0% { 
+          left: ${rect.left + scrollLeft - 2}px; 
+          opacity: 0; 
+        }
+        15% { 
+          opacity: 0.8; 
+        }
+        85% { 
+          opacity: 0.8; 
+        }
+        100% { 
+          left: ${rect.left + scrollLeft + rect.width}px; 
+          opacity: 0; 
+        }
+      }
+    `;
+    document.head.appendChild(style);
+    document.body.appendChild(scanBar);
+
+    return { scanBar, style };
+  }
+
+  /**
+   * 执行扫描动画
+   * @param {HTMLElement} inputElement - 目标输入框
+   * @param {string} siteName - 网站名称
+   * @returns {Promise} 动画完成的Promise
+   */
+  static async performScanAnimation(inputElement, siteName = 'Scanner') {
+    ChatABUtils.log(`${siteName}: 开始扫描动画`);
+    
+    const { scanBar, style } = ChatABUtils.createScanOverlay(inputElement, siteName);
+
+    // 等待扫描动画完成
+    await ChatABUtils.wait(800);
+
+    // 清理动画元素
+    setTimeout(() => {
+      if (scanBar && scanBar.parentNode) {
+        scanBar.parentNode.removeChild(scanBar);
+      }
+      if (style && style.parentNode) {
+        style.parentNode.removeChild(style);
+      }
+    }, 50);
+
+    ChatABUtils.log(`${siteName}: 扫描动画完成`);
+  }
+
+  /**
+   * 带扫描效果的文本填充
+   * @param {HTMLElement} inputElement - 输入框元素
+   * @param {string} text - 要填充的文本
+   * @param {string} siteName - 网站名称
+   * @param {Function} fillTextCallback - 实际填充文本的回调函数
+   */
+  static async fillTextWithScan(inputElement, text, siteName, fillTextCallback) {
+    // 执行扫描动画
+    await ChatABUtils.performScanAnimation(inputElement, siteName);
+    
+    // 执行文本填充
+    if (typeof fillTextCallback === 'function') {
+      await fillTextCallback(inputElement, text);
+    }
+  }
+
 }
 
 // 导出工具类

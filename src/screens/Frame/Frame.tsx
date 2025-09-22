@@ -25,6 +25,7 @@ declare global {
         local: {
           get: (keys: string[], callback: (result: { [key: string]: any }) => void) => void;
           set: (items: { [key: string]: any }, callback?: () => void) => void;
+          remove: (keys: string | string[], callback?: () => void) => void;
         };
       };
       runtime: {
@@ -51,9 +52,11 @@ export const Frame = (): JSX.Element => {
   };
   
   const [selectedModel, setSelectedModel] = useState(getInitialSelectedModel());
+  const [selectedModels, setSelectedModels] = useState<string[]>([getInitialSelectedModel()]); // 新增：多模型选择状态
   const [inputValue, setInputValue] = useState("");
   const [placeholder, setPlaceholder] = useState("Ask anything");
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [isSending, setIsSending] = useState(false); // 新增：发送状态管理
   const [isDark, setIsDark] = useState(() => {
     if (typeof window !== 'undefined') {
       const savedTheme = localStorage.getItem('theme') as 'light' | 'dark' | 'auto';
@@ -106,31 +109,8 @@ export const Frame = (): JSX.Element => {
     };
   }, []);
 
-  // 加载存储的输入内容
-  useEffect(() => {
-    const loadStoredData = async () => {
-      if (window.chrome?.storage?.local) {
-        try {
-          // Promise化Chrome Storage API
-          const chromeStorageGet = (keys: string[]): Promise<{ [key: string]: any }> => {
-            return new Promise((resolve) => {
-              window.chrome.storage.local.get(keys, resolve);
-            });
-          };
-
-          const result = await chromeStorageGet(['inputValue']);
-          
-          if (result.inputValue) {
-            setInputValue(result.inputValue);
-          }
-        } catch (error) {
-          console.error('ChatAB: 加载存储数据失败:', error);
-        }
-      }
-    };
-
-    loadStoredData();
-  }, []);
+  // 注释：移除了默认加载存储的输入内容的逻辑
+  // 现在tab页默认加载时不会从storage读取之前的输入数据
 
 
 
@@ -171,7 +151,17 @@ export const Frame = (): JSX.Element => {
       // 如果当前选中的模型被禁用了，选择第一个启用的模型
       const currentModelEnabled = enabledModels.some(m => m.id === selectedModel);
       if (!currentModelEnabled) {
-        setSelectedModel(enabledModels[0].id);
+        const newSelectedModel = enabledModels[0].id;
+        setSelectedModel(newSelectedModel);
+        setSelectedModels([newSelectedModel]);
+      } else {
+        // 确保 selectedModels 包含当前选中的模型
+        setSelectedModels(prev => {
+          if (!prev.includes(selectedModel)) {
+            return [selectedModel];
+          }
+          return prev;
+        });
       }
     } else {
       // 如果所有模型都被禁用，显示空列表但保持当前选中状态
@@ -217,13 +207,63 @@ export const Frame = (): JSX.Element => {
       return;
     }
     
-    const model = models.find(m => m.id === selectedModel);
-    if (model) {
-      // 直接存储原始输入内容，contentScript会正确处理换行符
+    if (isSending) {
+      return; // 如果正在发送中，直接返回
+    }
+    
+    setIsSending(true); // 设置发送状态为true
+    
+    if (selectedModels.length === 1) {
+      // 单模型：直接跳转
+      const model = models.find(m => m.id === selectedModels[0]);
+      if (model) {
+        if (window.chrome?.storage?.local) {
+          window.chrome.storage.local.set({ inputValue: inputValue });
+        }
+        // 延迟一小段时间显示禁用状态，然后跳转
+        setTimeout(() => {
+          window.location.href = model.url;
+        }, 100);
+      }
+    } else if (selectedModels.length > 1) {
+      // 多模型：所有模型都在新标签页打开
       if (window.chrome?.storage?.local) {
         window.chrome.storage.local.set({ inputValue: inputValue });
       }
-      window.location.href = model.url;
+      
+      // 逐个显示 toast 并打开新标签页
+      selectedModels.forEach((modelId, index) => {
+        const model = models.find(m => m.id === modelId);
+        if (model) {
+          setTimeout(() => {
+            // 显示当前模型的 toast
+            showToast(`正在 ${model.name} 中发送问题...`, 'success');
+            
+            // 延迟一点时间再打开标签页，确保 toast 能显示
+            setTimeout(() => {
+              window.open(model.url, '_blank');
+            }, 200);
+          }, index * 600); // 每个模型间隔 600ms
+        }
+      });
+      
+      // 在所有模型都打开后设置storage清空逻辑
+      const totalDelay = selectedModels.length * 600 + 2000; // 最后一个模型打开后额外等待2秒，确保所有模型都有足够时间读取storage
+      
+      // 设置多模型storage清空标记
+      if (window.chrome?.storage?.local) {
+        const clearTime = Date.now() + 60000; // 1分钟后清空
+        window.chrome.storage.local.set({ 
+          multiModelClearTime: clearTime,
+          multiModelCount: selectedModels.length,
+          multiModelProcessed: 0
+        });
+      }
+      
+      setTimeout(() => {
+        setInputValue(''); // 清空输入框
+        setIsSending(false); // 重置发送状态
+      }, totalDelay);
     }
   };
   
@@ -256,12 +296,34 @@ export const Frame = (): JSX.Element => {
     }
   };
 
-  // 选择 model 时，更新 recentModels 顺序和存储
-  const handleModelChange = (modelId: string) => {
-    setSelectedModel(modelId);
-    const newRecent = [modelId, ...models.filter(m => m.id !== modelId).map(m => m.id)];
-    setRecentModels(newRecent);
-    setModels(getSortedEnabledModels(newRecent));
+  // 多模型选择切换处理函数
+  const handleMultiModelToggle = (modelId: string) => {
+    setSelectedModels(prev => {
+      const isCurrentlySelected = prev.includes(modelId);
+      let newSelected;
+      
+      if (isCurrentlySelected) {
+        // 如果已选中，则取消选择（但至少保留一个）
+        if (prev.length > 1) {
+          newSelected = prev.filter(id => id !== modelId);
+        } else {
+          newSelected = prev; // 不允许全部取消选择
+        }
+      } else {
+        // 如果未选中，则添加到选中列表
+        newSelected = [...prev, modelId];
+      }
+      
+      // 更新主要选中模型为列表中的第一个
+      if (newSelected.length > 0) {
+        setSelectedModel(newSelected[0]);
+        // 更新 recent models
+        const newRecent = [newSelected[0], ...models.filter(m => !newSelected.includes(m.id)).map(m => m.id)];
+        setRecentModels(newRecent);
+      }
+      
+      return newSelected;
+    });
   };
 
   // 当应用开关状态改变时重新加载模型列表
@@ -309,42 +371,87 @@ export const Frame = (): JSX.Element => {
                   className="relative inline-block"
                   onMouseEnter={handleModelDropdownMouseEnter}
                   onMouseLeave={handleModelDropdownMouseLeave}
+                  style={{
+                    width: isModelDropdownOpen ? 180 : (
+                      selectedModels.length === 0 ? 36 : 
+                      selectedModels.length === 1 ? 36 : 
+                      Math.min(160, 24 + selectedModels.length * 14)
+                    ),
+                    transition: 'width 0.2s cubic-bezier(0.4,0,0.2,1)'
+                  }}
                 >
                   {/* 按钮内容 */}
                 <div
-                    className={`h-[36px] ${isDark ? 'bg-gray-700' : 'bg-[#f2f2f2]'} rounded-full flex items-center justify-center group select-none transition-all duration-200 cursor-pointer`}
-                  style={{ minWidth: 36, maxWidth: isModelDropdownOpen ? 180 : 36, transition: 'max-width 0.2s cubic-bezier(0.4,0,0.2,1)' }}
+                    className={`h-[36px] w-full ${isDark ? 'bg-gray-700' : 'bg-[#f2f2f2]'} rounded-full flex items-center justify-center group select-none transition-all duration-200 cursor-pointer`}
                 >
-                  {/* 默认状态：只显示居中的logo */}
+                  {/* 默认状态：显示所有选中模型的logo */}
                   {!isModelDropdownOpen && (
-                    <img
-                      className="w-5 h-5 object-cover"
-                      alt={`${selectedModel} icon`}
-                      src={models.find(m => m.id === selectedModel)?.icon}
-                    />
+                    <div className="flex items-center">
+                      {selectedModels.map((modelId, index) => {
+                        const model = models.find(m => m.id === modelId);
+                        return (
+                          <div
+                            key={modelId}
+                            className={`w-6 h-6 rounded-full flex items-center justify-center ${isDark ? 'bg-gray-600' : 'bg-white'}`}
+                            style={{
+                              marginLeft: index > 0 ? '-10px' : '0',
+                              zIndex: selectedModels.length - index,
+                              boxShadow: '0 1px 3px rgba(0,0,0,0.1)'
+                            }}
+                          >
+                            <img
+                              className="w-4 h-4 object-cover"
+                              alt={`${model?.name} icon`}
+                              src={model?.icon}
+                            />
+                          </div>
+                        );
+                      })}
+                    </div>
                   )}
                   
                   {/* 展开状态：显示完整内容 */}
                   {isModelDropdownOpen && (
                     <div className="flex items-center w-full px-2.5">
-                      <img
-                        className="w-5 h-5 object-cover"
-                        alt={`${selectedModel} icon`}
-                        src={models.find(m => m.id === selectedModel)?.icon}
-                      />
+                      <div className="flex items-center">
+                        {selectedModels.slice(0, 2).map((modelId, index) => {
+                          const model = models.find(m => m.id === modelId);
+                          return (
+                            <div
+                              key={modelId}
+                              className={`w-5 h-5 rounded-full flex items-center justify-center ${isDark ? 'bg-gray-600' : 'bg-white'}`}
+                              style={{
+                                marginLeft: index > 0 ? '-6px' : '0',
+                                zIndex: selectedModels.length - index,
+                                boxShadow: '0 1px 3px rgba(0,0,0,0.1)'
+                              }}
+                            >
+                              <img
+                                className="w-3.5 h-3.5 object-cover"
+                                alt={`${model?.name} icon`}
+                                src={model?.icon}
+                              />
+                            </div>
+                          );
+                        })}
+                      </div>
                       <span
                         className={`font-['Roboto',Helvetica] font-normal ${isDark ? 'text-gray-200' : 'text-[#666666]'} text-sm tracking-[0.50px] ml-2 transition-all duration-200 opacity-100 max-w-[100px]`}
                       >
-                        {models.find(m => m.id === selectedModel)?.name}
+                        {selectedModels.length === 1 
+                          ? models.find(m => m.id === selectedModels[0])?.name
+                          : `${selectedModels.length} 个模型`}
                       </span>
                       <ChevronDown className={`w-4 h-4 ml-1 transition-transform duration-200 opacity-100 rotate-180 ${isDark ? 'text-gray-400' : 'text-gray-500'}`} />
-                      <IconLink
-                        href={models.find(m => m.id === selectedModel)?.link}
-                        target="_blank"
-                        className="ml-2 w-5 h-5 opacity-100"
-                        style={{ maxHeight: '1.5em' }}
-                        isDark={isDark}
-                      />
+                      {selectedModels.length === 1 && (
+                        <IconLink
+                          href={models.find(m => m.id === selectedModels[0])?.link}
+                          target="_blank"
+                          className="ml-2 w-5 h-5 opacity-100"
+                          style={{ maxHeight: '1.5em' }}
+                          isDark={isDark}
+                        />
+                      )}
                     </div>
                   )}
                 </div>
@@ -356,28 +463,46 @@ export const Frame = (): JSX.Element => {
                       `}
                       style={{ boxShadow: isModelDropdownOpen ? '0 4px 16px 0 rgba(0,0,0,0.10)' : 'none' }}
                     >
-                      {models.map((model) => (
-                        <li
-                          key={model.id}
-                          onClick={() => {
-                            handleModelChange(model.id);
-                            setIsModelDropdownOpen(false);
-                          }}
-                          className={`flex items-center py-1.5 px-2 rounded-[5px] cursor-pointer relative group
-                            ${isDark ? 'hover:bg-gray-700' : 'hover:bg-[#f5f5f5]'}
-                            ${selectedModel === model.id ? (isDark ? 'bg-gray-700' : 'bg-[#f5f5f5]') : ''}
-                          `}
-                        >
-                          <img 
-                            className="w-5 h-5 object-cover mr-2"
-                            alt={`${model.name} icon`}
-                            src={model.icon}
-                          />
-                          <span className={`font-['Roboto',Helvetica] font-normal truncate ${isDark ? 'text-gray-200' : 'text-[#666666]'} text-sm tracking-[0.50px]`}>
-                            {model.name}
-                          </span>
-                        </li>
-                      ))}
+                      {models.map((model) => {
+                        const isSelected = selectedModels.includes(model.id);
+                        return (
+                          <li
+                            key={model.id}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleMultiModelToggle(model.id);
+                            }}
+                            className={`flex items-center py-1.5 px-2 rounded-[5px] cursor-pointer relative group
+                              ${isDark ? 'hover:bg-gray-700' : 'hover:bg-[#f5f5f5]'}
+                              ${isSelected ? (isDark ? 'bg-gray-700' : 'bg-[#f5f5f5]') : ''}
+                            `}
+                          >
+                            <div className="relative mr-2">
+                              <div
+                                className={`w-5 h-5 rounded-full flex items-center justify-center ${
+                                  isSelected 
+                                    ? (isDark ? 'bg-blue-600' : 'bg-blue-500')
+                                    : (isDark ? 'bg-gray-600' : 'bg-gray-200')
+                                } transition-colors duration-200`}
+                              >
+                                <img 
+                                  className="w-3.5 h-3.5 object-cover"
+                                  alt={`${model.name} icon`}
+                                  src={model.icon}
+                                />
+                              </div>
+                              {isSelected && (
+                                <div className="absolute -top-1 -right-1 w-3 h-3 bg-green-500 rounded-full flex items-center justify-center">
+                                  <div className="w-1.5 h-1.5 bg-white rounded-full"></div>
+                                </div>
+                              )}
+                            </div>
+                            <span className={`font-['Roboto',Helvetica] font-normal truncate ${isDark ? 'text-gray-200' : 'text-[#666666]'} text-sm tracking-[0.50px]`}>
+                              {model.name}
+                            </span>
+                          </li>
+                        );
+                      })}
                     </ul>
                 </div>
               </div>
@@ -385,15 +510,15 @@ export const Frame = (): JSX.Element => {
                 {/* Send Button */}
                 <button 
                   onClick={handleSend}
-                  className="cursor-pointer"
+                  className={`${isSending || !inputValue.trim() ? 'cursor-not-allowed' : 'cursor-pointer'}`}
+                  disabled={isSending || !inputValue.trim()}
                 >
                   <SendIcon 
                     size={36}
-                    className={`transition-all duration-200 hover:opacity-80 ${
-                      inputValue.trim() 
-                        ? (isDark ? 'text-white hover:text-gray-200' : 'text-black hover:text-gray-800')
-                        : (isDark ? 'text-gray-500 hover:text-gray-400' : 'text-gray-400 hover:text-gray-500')
-                    }`} 
+                    disabled={!inputValue.trim()}
+                    isSending={isSending}
+                    isDark={isDark}
+                    className="transition-all duration-200"
                   />
                 </button>
               </div>

@@ -210,7 +210,7 @@ class BaseHandler {
       return;
     }
 
-    const inputElement = this.findInputElement();
+    const inputElement = await this.findInputElement();
     if (!inputElement) {
       // 如果没找到输入框，尝试重试
       await this.retryHandle(inputValue);
@@ -226,8 +226,16 @@ class BaseHandler {
     // 发送消息
     const success = await this.sendMessage(inputElement);
     
+    // 发送成功后处理storage清空逻辑
     if (success) {
-      this.utils.clearStorage();
+      this.utils.log(`${this.siteName}: 发送成功，检查storage清空策略`);
+      await this.handleStorageClear();
+    } else {
+      this.utils.log(`${this.siteName}: 发送失败，延迟清空storage以便重试`);
+      // 发送失败时延迟清空storage，给用户手动重试的机会
+      setTimeout(() => {
+        this.utils.clearStorage();
+      }, 10000); // 10秒后清空
     }
   }
 
@@ -239,15 +247,74 @@ class BaseHandler {
     this.utils.log(`${this.siteName}: 二次尝试查找输入框`);
     await this.utils.wait(2000);
     
-    const retryInput = this.findInputElement();
+    const retryInput = await this.findInputElement();
     if (retryInput) {
       this.utils.log(`${this.siteName}: 二次尝试找到输入框`);
       await this.fillText(retryInput, inputValue);
       await this.utils.wait(800);
-      await this.sendMessage(retryInput);
-      this.utils.clearStorage();
+      const success = await this.sendMessage(retryInput);
+      
+      // 重试后也要处理storage清空
+      if (success) {
+        this.utils.log(`${this.siteName}: 重试发送成功，检查storage清空策略`);
+        await this.handleStorageClear();
+      } else {
+        this.utils.log(`${this.siteName}: 重试发送失败，延迟清空storage`);
+        setTimeout(() => {
+          this.utils.clearStorage();
+        }, 10000); // 10秒后清空
+      }
     } else {
-      this.utils.log(`${this.siteName}: 二次尝试仍然没有找到输入框`);
+      this.utils.log(`${this.siteName}: 二次尝试仍然没有找到输入框，清空storage`);
+      // 如果找不到输入框，也要清空storage避免无限重试
+      this.utils.clearStorage();
+    }
+  }
+
+  /**
+   * 处理storage清空策略
+   * 根据是否是多模型场景来决定清空时机
+   */
+  async handleStorageClear() {
+    try {
+      // 检查是否是多模型场景
+      chrome.storage.local.get(['multiModelClearTime', 'multiModelCount', 'multiModelProcessed'], (result) => {
+        const { multiModelClearTime, multiModelCount, multiModelProcessed } = result;
+        
+        if (multiModelClearTime && multiModelCount) {
+          // 多模型场景
+          const newProcessed = (multiModelProcessed || 0) + 1;
+          chrome.storage.local.set({ multiModelProcessed: newProcessed });
+          
+          this.utils.log(`${this.siteName}: 多模型场景，已处理 ${newProcessed}/${multiModelCount} 个模型`);
+          
+          // 检查是否所有模型都已处理完成
+          if (newProcessed >= multiModelCount) {
+            this.utils.log(`${this.siteName}: 所有模型已处理完成，立即清空storage`);
+            this.utils.clearStorage();
+            // 清空多模型标记
+            chrome.storage.local.remove(['multiModelClearTime', 'multiModelCount', 'multiModelProcessed']);
+          } else {
+            // 还有模型未处理，检查是否超时
+            const currentTime = Date.now();
+            if (currentTime > multiModelClearTime) {
+              this.utils.log(`${this.siteName}: 多模型处理超时，强制清空storage`);
+              this.utils.clearStorage();
+              chrome.storage.local.remove(['multiModelClearTime', 'multiModelCount', 'multiModelProcessed']);
+            } else {
+              this.utils.log(`${this.siteName}: 等待其他模型处理完成或超时`);
+            }
+          }
+        } else {
+          // 单模型场景，直接清空
+          this.utils.log(`${this.siteName}: 单模型场景，立即清空storage`);
+          this.utils.clearStorage();
+        }
+      });
+    } catch (error) {
+      this.utils.log(`${this.siteName}: 处理storage清空策略时出错: ${error.message}`);
+      // 出错时直接清空，避免storage残留
+      this.utils.clearStorage();
     }
   }
 

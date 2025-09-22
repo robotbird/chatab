@@ -5,24 +5,43 @@
 class HandlerFactory {
   constructor() {
     this.handlers = new Map();
-    this.initializeHandlers();
+    this.initialized = false;
   }
 
   /**
-   * 初始化所有处理器
+   * 初始化所有处理器（延迟初始化）
    */
   initializeHandlers() {
+    if (this.initialized) return;
+    
+    // 检查所有处理器类是否已加载
+    const handlerClasses = [
+      'ChatGPTHandler', 'DeepSeekHandler', 'GeminiHandler', 'DoubaoHandler',
+      'PerplexityHandler', 'KimiHandler', 'TongyiHandler', 'YuanbaoHandler',
+      'GrokHandler', 'YiyanHandler'
+    ];
+    
+    const missingHandlers = handlerClasses.filter(className => !window[className]);
+    if (missingHandlers.length > 0) {
+      console.warn('ChatAB: 以下处理器类尚未加载:', missingHandlers.join(', '));
+      return false;
+    }
+    
     // 注册所有处理器类
-    this.registerHandler('CHATGPT', ChatGPTHandler);
-    this.registerHandler('DEEPSEEK', DeepSeekHandler);
-    this.registerHandler('GEMINI', GeminiHandler);
-    this.registerHandler('DOUBAO', DoubaoHandler);
-    this.registerHandler('PERPLEXITY', PerplexityHandler);
-    this.registerHandler('KIMI', KimiHandler);
-    this.registerHandler('TONGYI', TongyiHandler);
-    this.registerHandler('YUANBAO', YuanbaoHandler);
-    this.registerHandler('GROK', GrokHandler);
-    this.registerHandler('YIYAN', YiyanHandler);
+    this.registerHandler('CHATGPT', window.ChatGPTHandler);
+    this.registerHandler('DEEPSEEK', window.DeepSeekHandler);
+    this.registerHandler('GEMINI', window.GeminiHandler);
+    this.registerHandler('DOUBAO', window.DoubaoHandler);
+    this.registerHandler('PERPLEXITY', window.PerplexityHandler);
+    this.registerHandler('KIMI', window.KimiHandler);
+    this.registerHandler('TONGYI', window.TongyiHandler);
+    this.registerHandler('YUANBAO', window.YuanbaoHandler);
+    this.registerHandler('GROK', window.GrokHandler);
+    this.registerHandler('YIYAN', window.YiyanHandler);
+    
+    this.initialized = true;
+    console.log('ChatAB: HandlerFactory 初始化完成');
+    return true;
   }
 
   /**
@@ -55,6 +74,12 @@ class HandlerFactory {
    * @returns {BaseHandler|null} 处理器实例或null
    */
   createHandlerForSite(hostname) {
+    // 确保处理器已初始化
+    if (!this.initializeHandlers()) {
+      console.error('ChatAB: 处理器初始化失败，无法创建处理器');
+      return null;
+    }
+    
     const siteKey = window.ChatABUtils.detectSite(hostname);
     if (siteKey) {
       const handler = this.createHandler(siteKey);

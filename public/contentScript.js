@@ -3,8 +3,8 @@
  * 主入口文件，负责网站检测和调度
  */
 
-// 全局变量
-let scriptExecuted = false;
+// 全局变量 - 使用Set来跟踪已执行的页面，避免重复执行
+let executedPages = new Set();
 let handlerFactory = null;
 
 /**
@@ -16,12 +16,43 @@ function initScript() {
   const url = new URL(window.location.href);
   console.log('ChatAB: 解析后的URL对象:', url);
   
-  // 检查是否已加载必要的依赖
-  if (!window.ChatABConstants || !window.ChatABUtils || !window.BaseHandler || !window.HandlerFactory) {
-    console.error('ChatAB: 依赖文件未完全加载，等待加载完成...');
-    setTimeout(initScript, 1000);
+  // 检查是否已加载必要的依赖，增加重试计数器
+  if (!window.initScriptRetryCount) {
+    window.initScriptRetryCount = 0;
+  }
+  
+  // 检查基础依赖
+  const basicDeps = ['ChatABConstants', 'ChatABUtils', 'BaseHandler', 'HandlerFactory'];
+  const missingBasicDeps = basicDeps.filter(dep => !window[dep]);
+  
+  // 检查处理器类（可选，不阻塞基础功能）
+  const handlerClasses = [
+    'ChatGPTHandler', 'DeepSeekHandler', 'GeminiHandler', 'DoubaoHandler',
+    'PerplexityHandler', 'KimiHandler', 'TongyiHandler', 'YuanbaoHandler',
+    'GrokHandler', 'YiyanHandler'
+  ];
+  const missingHandlers = handlerClasses.filter(handler => !window[handler]);
+  
+  if (missingBasicDeps.length > 0) {
+    window.initScriptRetryCount++;
+    
+    if (window.initScriptRetryCount > 10) {
+      console.error('ChatAB: 基础依赖文件加载失败，已重试10次，停止重试。缺少的依赖:', missingBasicDeps.join(', '));
+      return;
+    }
+    
+    console.log(`ChatAB: 基础依赖未完全加载，等待加载完成... (第${window.initScriptRetryCount}次重试)，缺少: ${missingBasicDeps.join(', ')}`);
+    setTimeout(initScript, 500);
     return;
   }
+  
+  // 如果有处理器类缺失，记录警告但不阻塞
+  if (missingHandlers.length > 0) {
+    console.warn('ChatAB: 以下处理器类尚未加载，可能影响某些网站的功能:', missingHandlers.join(', '));
+  }
+  
+  // 重置重试计数器
+  window.initScriptRetryCount = 0;
   
   // 创建处理器工厂
   if (!handlerFactory) {
@@ -48,7 +79,7 @@ function initScript() {
     const inputValue = result.inputValue;
     
     if (!inputValue || !inputValue.trim()) {
-      console.log('ChatAB: 没有找到要提交的内容');
+      console.log('ChatAB: 没有找到要提交的内容，跳过处理');
       return;
     }
     
@@ -77,12 +108,15 @@ function initScript() {
 function ensureScriptExecution() {
   console.log('ChatAB: 准备启动脚本，当前document.readyState:', document.readyState);
 
+  // 生成当前页面的唯一标识
+  const pageId = window.location.href + '_' + Date.now();
+  
   // 1. DOMContentLoaded - 比load事件更早触发
   if (document.readyState === 'loading') {
     console.log('ChatAB: 文档正在加载，等待DOMContentLoaded事件');
     document.addEventListener('DOMContentLoaded', function() {
-      if (!scriptExecuted) {
-        scriptExecuted = true;
+      if (!executedPages.has(pageId)) {
+        executedPages.add(pageId);
         console.log('ChatAB: 通过DOMContentLoaded启动');
         initScript();
       }
@@ -90,14 +124,14 @@ function ensureScriptExecution() {
   } else {
     // 2. 文档已经加载完成，直接执行
     console.log('ChatAB: 文档已加载，直接启动，readyState:', document.readyState);
-    scriptExecuted = true;
+    executedPages.add(pageId);
     initScript();
   }
 
   // 3. 备用方案 - window.load事件
   window.addEventListener('load', function() {
-    if (!scriptExecuted) {
-      scriptExecuted = true;
+    if (!executedPages.has(pageId)) {
+      executedPages.add(pageId);
       console.log('ChatAB: 通过window.load启动');
       initScript();
     }
@@ -105,8 +139,8 @@ function ensureScriptExecution() {
 
   // 4. 最后的备用方案 - 延迟执行
   setTimeout(function() {
-    if (!scriptExecuted) {
-      scriptExecuted = true;
+    if (!executedPages.has(pageId)) {
+      executedPages.add(pageId);
       console.log('ChatAB: 通过延迟方案启动');
       initScript();
     }
@@ -122,3 +156,15 @@ chrome.runtime.onMessage.addListener(function(message, sender, sendResponse) {
 
 // 启动脚本
 ensureScriptExecution();
+
+// 启动多模型超时检查（只在第一次加载时启动）
+if (!window.multiModelTimeoutCheckStarted) {
+  window.multiModelTimeoutCheckStarted = true;
+  // 等待工具类加载完成后启动
+  setTimeout(() => {
+    if (window.ChatABUtils) {
+      window.ChatABUtils.startMultiModelTimeoutCheck();
+      console.log('ChatAB: 多模型超时检查已启动');
+    }
+  }, 1000);
+}
