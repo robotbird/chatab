@@ -247,12 +247,20 @@ export const Frame = (): JSX.Element => {
         }
       });
       
-      // 在所有模型都打开后清空storage和输入框，并重置发送状态
-      const totalDelay = selectedModels.length * 600 + 5000; // 最后一个模型打开后额外等待5秒，确保所有模型都有足够时间读取storage
+      // 在所有模型都打开后设置storage清空逻辑
+      const totalDelay = selectedModels.length * 600 + 2000; // 最后一个模型打开后额外等待2秒，确保所有模型都有足够时间读取storage
+      
+      // 设置多模型storage清空标记
+      if (window.chrome?.storage?.local) {
+        const clearTime = Date.now() + 60000; // 1分钟后清空
+        window.chrome.storage.local.set({ 
+          multiModelClearTime: clearTime,
+          multiModelCount: selectedModels.length,
+          multiModelProcessed: 0
+        });
+      }
+      
       setTimeout(() => {
-        if (window.chrome?.storage?.local) {
-          window.chrome.storage.local.remove(['inputValue']);
-        }
         setInputValue(''); // 清空输入框
         setIsSending(false); // 重置发送状态
       }, totalDelay);

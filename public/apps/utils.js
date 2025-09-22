@@ -144,9 +144,25 @@ class ChatABUtils {
    */
   static clearStorage() {
     setTimeout(() => {
-      chrome.storage.local.remove(['inputValue']);
+      chrome.storage.local.remove(['inputValue', 'multiModelClearTime', 'multiModelCount', 'multiModelProcessed']);
       console.log('ChatAB: 清空 storage');
     }, 1000);
+  }
+
+  /**
+   * 启动多模型超时检查定时器
+   */
+  static startMultiModelTimeoutCheck() {
+    // 每10秒检查一次是否有超时的多模型任务
+    setInterval(() => {
+      chrome.storage.local.get(['multiModelClearTime'], (result) => {
+        const { multiModelClearTime } = result;
+        if (multiModelClearTime && Date.now() > multiModelClearTime) {
+          console.log('ChatAB: 多模型处理超时，强制清空storage');
+          ChatABUtils.clearStorage();
+        }
+      });
+    }, 10000); // 每10秒检查一次
   }
 
   /**

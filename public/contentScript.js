@@ -156,3 +156,15 @@ chrome.runtime.onMessage.addListener(function(message, sender, sendResponse) {
 
 // 启动脚本
 ensureScriptExecution();
+
+// 启动多模型超时检查（只在第一次加载时启动）
+if (!window.multiModelTimeoutCheckStarted) {
+  window.multiModelTimeoutCheckStarted = true;
+  // 等待工具类加载完成后启动
+  setTimeout(() => {
+    if (window.ChatABUtils) {
+      window.ChatABUtils.startMultiModelTimeoutCheck();
+      console.log('ChatAB: 多模型超时检查已启动');
+    }
+  }, 1000);
+}
