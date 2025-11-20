@@ -472,34 +472,48 @@ export const Frame = (): JSX.Element => {
                               e.stopPropagation();
                               handleMultiModelToggle(model.id);
                             }}
-                            className={`flex items-center py-1.5 px-2 rounded-[5px] cursor-pointer relative group
+                            className={`flex items-center justify-between py-1.5 px-2 rounded-[5px] cursor-pointer relative group
                               ${isDark ? 'hover:bg-gray-700' : 'hover:bg-[#f5f5f5]'}
                               ${isSelected ? (isDark ? 'bg-gray-700' : 'bg-[#f5f5f5]') : ''}
                             `}
                           >
-                            <div className="relative mr-2">
-                              <div
-                                className={`w-5 h-5 rounded-full flex items-center justify-center ${
-                                  isSelected 
-                                    ? (isDark ? 'bg-blue-600' : 'bg-blue-500')
-                                    : (isDark ? 'bg-gray-600' : 'bg-gray-200')
-                                } transition-colors duration-200`}
-                              >
-                                <img 
-                                  className="w-3.5 h-3.5 object-cover"
-                                  alt={`${model.name} icon`}
-                                  src={model.icon}
-                                />
-                              </div>
-                              {isSelected && (
-                                <div className="absolute -top-1 -right-1 w-3 h-3 bg-green-500 rounded-full flex items-center justify-center">
-                                  <div className="w-1.5 h-1.5 bg-white rounded-full"></div>
+                            <div className="flex items-center min-w-0">
+                              <div className="relative mr-2 shrink-0">
+                                <div
+                                  className={`w-5 h-5 rounded-full flex items-center justify-center ${
+                                    isSelected 
+                                      ? (isDark ? 'bg-blue-600' : 'bg-blue-500')
+                                      : (isDark ? 'bg-gray-600' : 'bg-gray-200')
+                                  } transition-colors duration-200`}
+                                >
+                                  <img 
+                                    className="w-3.5 h-3.5 object-cover"
+                                    alt={`${model.name} icon`}
+                                    src={model.icon}
+                                  />
                                 </div>
-                              )}
+                                {isSelected && (
+                                  <div className="absolute -top-1 -right-1 w-3 h-3 bg-green-500 rounded-full flex items-center justify-center">
+                                    <div className="w-1.5 h-1.5 bg-white rounded-full"></div>
+                                  </div>
+                                )}
+                              </div>
+                              <span className={`font-['Roboto',Helvetica] font-normal truncate ${isDark ? 'text-gray-200' : 'text-[#666666]'} text-sm tracking-[0.50px]`}>
+                                {model.name}
+                              </span>
                             </div>
-                            <span className={`font-['Roboto',Helvetica] font-normal truncate ${isDark ? 'text-gray-200' : 'text-[#666666]'} text-sm tracking-[0.50px]`}>
-                              {model.name}
-                            </span>
+                            
+                            <div 
+                              onClick={(e) => e.stopPropagation()}
+                              className="ml-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 shrink-0"
+                            >
+                              <IconLink
+                                href={model.link}
+                                target="_blank"
+                                className={`w-4 h-4 ${isDark ? 'text-gray-400 hover:text-gray-200' : 'text-gray-400 hover:text-gray-600'}`}
+                                isDark={isDark}
+                              />
+                            </div>
                           </li>
                         );
                       })}
