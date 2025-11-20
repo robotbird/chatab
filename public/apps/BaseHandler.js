@@ -277,44 +277,69 @@ class BaseHandler {
    */
   async handleStorageClear() {
     try {
+      // 检查扩展上下文是否有效
+      if (!chrome.runtime || !chrome.runtime.id) {
+        return;
+      }
+
       // 检查是否是多模型场景
       chrome.storage.local.get(['multiModelClearTime', 'multiModelCount', 'multiModelProcessed'], (result) => {
-        const { multiModelClearTime, multiModelCount, multiModelProcessed } = result;
-        
-        if (multiModelClearTime && multiModelCount) {
-          // 多模型场景
-          const newProcessed = (multiModelProcessed || 0) + 1;
-          chrome.storage.local.set({ multiModelProcessed: newProcessed });
-          
-          this.utils.log(`${this.siteName}: 多模型场景，已处理 ${newProcessed}/${multiModelCount} 个模型`);
-          
-          // 检查是否所有模型都已处理完成
-          if (newProcessed >= multiModelCount) {
-            this.utils.log(`${this.siteName}: 所有模型已处理完成，立即清空storage`);
-            this.utils.clearStorage();
-            // 清空多模型标记
-            chrome.storage.local.remove(['multiModelClearTime', 'multiModelCount', 'multiModelProcessed']);
-          } else {
-            // 还有模型未处理，检查是否超时
-            const currentTime = Date.now();
-            if (currentTime > multiModelClearTime) {
-              this.utils.log(`${this.siteName}: 多模型处理超时，强制清空storage`);
-              this.utils.clearStorage();
-              chrome.storage.local.remove(['multiModelClearTime', 'multiModelCount', 'multiModelProcessed']);
-            } else {
-              this.utils.log(`${this.siteName}: 等待其他模型处理完成或超时`);
-            }
+        try {
+          // 检查运行时错误
+          if (chrome.runtime.lastError) {
+            return;
           }
-        } else {
-          // 单模型场景，直接清空
-          this.utils.log(`${this.siteName}: 单模型场景，立即清空storage`);
-          this.utils.clearStorage();
+
+          const { multiModelClearTime, multiModelCount, multiModelProcessed } = result || {};
+          
+          if (multiModelClearTime && multiModelCount) {
+            // 多模型场景
+            const newProcessed = (multiModelProcessed || 0) + 1;
+            // 再次检查上下文
+            if (chrome.runtime && chrome.runtime.id) {
+              chrome.storage.local.set({ multiModelProcessed: newProcessed });
+            }
+            
+            this.utils.log(`${this.siteName}: 多模型场景，已处理 ${newProcessed}/${multiModelCount} 个模型`);
+            
+            // 检查是否所有模型都已处理完成
+            if (newProcessed >= multiModelCount) {
+              this.utils.log(`${this.siteName}: 所有模型已处理完成，立即清空storage`);
+              this.utils.clearStorage();
+              // 清空多模型标记
+              if (chrome.runtime && chrome.runtime.id) {
+                chrome.storage.local.remove(['multiModelClearTime', 'multiModelCount', 'multiModelProcessed']);
+              }
+            } else {
+              // 还有模型未处理，检查是否超时
+              const currentTime = Date.now();
+              if (currentTime > multiModelClearTime) {
+                this.utils.log(`${this.siteName}: 多模型处理超时，强制清空storage`);
+                this.utils.clearStorage();
+                if (chrome.runtime && chrome.runtime.id) {
+                  chrome.storage.local.remove(['multiModelClearTime', 'multiModelCount', 'multiModelProcessed']);
+                }
+              } else {
+                this.utils.log(`${this.siteName}: 等待其他模型处理完成或超时`);
+              }
+            }
+          } else {
+            // 单模型场景，直接清空
+            this.utils.log(`${this.siteName}: 单模型场景，立即清空storage`);
+            this.utils.clearStorage();
+          }
+        } catch (err) {
+          // 忽略回调中的错误
         }
       });
     } catch (error) {
       this.utils.log(`${this.siteName}: 处理storage清空策略时出错: ${error.message}`);
       // 出错时直接清空，避免storage残留
-      this.utils.clearStorage();
+      try {
+        this.utils.clearStorage();
+      } catch (e) {
+        // 忽略
+      }
     }
   }
 
