@@ -4,6 +4,8 @@ import { Card, CardContent } from "../../components/ui/card";
 import { IconLink } from "../../components/ui/IconLink";
 import { SendIcon } from "../../components/ui/SendIcon";
 import { SettingsPanel } from "../../components/ui/SettingsPanel";
+import { HistoryIcon } from "../../components/ui/HistoryIcon";
+import { HistoryPanel, HistoryItem } from "../../components/ui/HistoryPanel";
 import { useToast } from "../../components/ui/Toast";
 import { 
   ModelInfo,
@@ -56,6 +58,8 @@ export const Frame = (): JSX.Element => {
   const [inputValue, setInputValue] = useState("");
   const [placeholder, setPlaceholder] = useState("Ask anything");
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [isHistoryOpen, setIsHistoryOpen] = useState(false); // 新增：历史记录面板状态
+  const [history, setHistory] = useState<HistoryItem[]>([]); // 新增：历史记录数据
   const [isSending, setIsSending] = useState(false); // 新增：发送状态管理
   const [isDark, setIsDark] = useState(() => {
     if (typeof window !== 'undefined') {
@@ -181,6 +185,16 @@ export const Frame = (): JSX.Element => {
     }
 
     loadModels();
+
+    // Load history
+    const savedHistory = localStorage.getItem('chat_history');
+    if (savedHistory) {
+      try {
+        setHistory(JSON.parse(savedHistory));
+      } catch (e) {
+        console.error('Failed to parse history', e);
+      }
+    }
   }, []);
 
   // 初始化壁纸服务
@@ -208,6 +222,24 @@ export const Frame = (): JSX.Element => {
       clearInterval(wallpaperInterval);
     };
   }, []);
+
+  const saveHistory = (text: string, modelIds: string[]) => {
+    const newItem: HistoryItem = {
+      id: Date.now().toString(),
+      text,
+      modelIds,
+      timestamp: Date.now()
+    };
+    
+    const newHistory = [newItem, ...history].slice(0, 50); // Limit to 50 items
+    setHistory(newHistory);
+    localStorage.setItem('chat_history', JSON.stringify(newHistory));
+  };
+
+  const clearHistory = () => {
+    setHistory([]);
+    localStorage.removeItem('chat_history');
+  };
   
   // 处理发送功能
   const handleSend = () => {
@@ -226,6 +258,7 @@ export const Frame = (): JSX.Element => {
       // 单模型：直接跳转
       const model = models.find(m => m.id === selectedModels[0]);
       if (model) {
+        saveHistory(inputValue, selectedModels);
         if (window.chrome?.storage?.local) {
           window.chrome.storage.local.set({ inputValue: inputValue });
         }
@@ -236,6 +269,7 @@ export const Frame = (): JSX.Element => {
       }
     } else if (selectedModels.length > 1) {
       // 多模型：所有模型都在新标签页打开
+      saveHistory(inputValue, selectedModels);
       if (window.chrome?.storage?.local) {
         window.chrome.storage.local.set({ inputValue: inputValue });
       }
@@ -349,6 +383,16 @@ export const Frame = (): JSX.Element => {
           className="p-2 rounded-full bg-gray-200/30 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
         >
           <Settings className={`w-5 h-5 ${isDark ? 'text-gray-300' : 'text-gray-600'}`} />
+        </button>
+      </div>
+
+      {/* History Button */}
+      <div className="absolute top-[30px] left-[30px] flex gap-2 z-10">
+        <button
+          onClick={() => setIsHistoryOpen(true)}
+          className="p-2 rounded-full bg-gray-200/30 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
+        >
+          <HistoryIcon className={`w-5 h-5 ${isDark ? 'text-gray-300' : 'text-gray-600'}`} />
         </button>
       </div>
       
@@ -557,6 +601,17 @@ export const Frame = (): JSX.Element => {
         isDark={isDark}
         onThemeChange={handleThemeChange}
         onAppToggleChange={handleAppToggleChange}
+      />
+
+      {/* History Panel */}
+      <HistoryPanel
+        isOpen={isHistoryOpen}
+        onClose={() => setIsHistoryOpen(false)}
+        isDark={isDark}
+        history={history}
+        models={models}
+        onSelect={(text) => setInputValue(text)}
+        onClear={clearHistory}
       />
       
       {/* Toast Notifications */}
