@@ -519,7 +519,7 @@ export const Frame = (): JSX.Element => {
                               <IconLink
                                 href={model.link}
                                 target="_blank"
-                                className={`w-4 h-4 ${isDark ? 'text-gray-400 hover:text-gray-200' : 'text-gray-400 hover:text-gray-600'}`}
+                                className={`w-5 h-5 ${isDark ? 'text-gray-400 hover:text-gray-200' : 'text-gray-400 hover:text-gray-600'}`}
                                 isDark={isDark}
                               />
                             </div>
