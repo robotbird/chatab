@@ -141,27 +141,10 @@ class ChatABUtils {
 
   /**
    * 清空Chrome存储
+   * 注意：此方法已被禁用，现在的清理逻辑统一在扩展弹窗初始化时执行
    */
   static clearStorage() {
-    setTimeout(() => {
-      try {
-        // 严格检查上下文有效性
-        if (typeof chrome === 'undefined' || !chrome.runtime || !chrome.runtime.id || !chrome.storage || !chrome.storage.local) {
-          return;
-        }
-
-        chrome.storage.local.remove(['inputValue', 'multiModelClearTime', 'multiModelCount', 'multiModelProcessed'], () => {
-          try {
-            if (chrome.runtime.lastError) return;
-            console.log('ChatAB: 清空 storage');
-          } catch (err) {
-            // 忽略回调中的错误
-          }
-        });
-      } catch (e) {
-        // 忽略所有错误，包括上下文失效
-      }
-    }, 1000);
+    // console.log('ChatAB: clearStorage called but disabled');
   }
 
   /**
