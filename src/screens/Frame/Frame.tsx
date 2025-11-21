@@ -171,6 +171,15 @@ export const Frame = (): JSX.Element => {
 
   // 初始化 recentModels 和 selectedModel
   useEffect(() => {
+    // 每次新建窗口时清理 storage 中的输入内容
+    if (typeof window !== 'undefined' && window.chrome?.storage?.local) {
+      window.chrome.storage.local.remove(['inputValue', 'multiModelClearTime', 'multiModelCount', 'multiModelProcessed'], () => {
+        // 忽略错误
+        if (window.chrome.runtime.lastError) return;
+        console.log('ChatAB: 新窗口初始化，清理 storage');
+      });
+    }
+
     loadModels();
   }, []);
 

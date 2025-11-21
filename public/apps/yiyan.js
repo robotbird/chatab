@@ -158,7 +158,7 @@ class YiyanHandler extends BaseHandler {
       
       await this.utils.wait(800);
       await this.sendMessage(retryInput);
-      this.utils.clearStorage();
+      // this.utils.clearStorage(); // 移除了这里的清空逻辑
     } else {
       this.utils.log('Yiyan: 二次尝试仍然没有找到输入框');
     }

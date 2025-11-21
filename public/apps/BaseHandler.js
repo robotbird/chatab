@@ -7,6 +7,7 @@ class BaseHandler {
     this.siteName = siteName;
     this.utils = window.ChatABUtils;
     this.maxRetries = 5;
+    this.hasSentSuccessfully = false;
   }
 
   /**
@@ -205,6 +206,11 @@ class BaseHandler {
    * @param {string} inputValue - 要发送的文本
    */
   async handle(inputValue) {
+    if (this.hasSentSuccessfully) {
+      this.utils.log(`${this.siteName}: 已经发送成功过，跳过重复处理`);
+      return;
+    }
+
     if (!inputValue || !inputValue.trim()) {
       this.utils.log(`${this.siteName}: 没有文本内容`);
       return;
@@ -228,14 +234,12 @@ class BaseHandler {
     
     // 发送成功后处理storage清空逻辑
     if (success) {
-      this.utils.log(`${this.siteName}: 发送成功，检查storage清空策略`);
-      await this.handleStorageClear();
+      this.hasSentSuccessfully = true;
+      this.utils.log(`${this.siteName}: 发送成功，等待新tab页初始化时清空`);
+      // 移除了这里的清空逻辑，统一由新tab页初始化时清空
     } else {
-      this.utils.log(`${this.siteName}: 发送失败，延迟清空storage以便重试`);
-      // 发送失败时延迟清空storage，给用户手动重试的机会
-      setTimeout(() => {
-        this.utils.clearStorage();
-      }, 10000); // 10秒后清空
+      this.utils.log(`${this.siteName}: 发送失败，等待用户手动重试`);
+      // 移除了延迟清空逻辑
     }
   }
 
@@ -254,20 +258,15 @@ class BaseHandler {
       await this.utils.wait(800);
       const success = await this.sendMessage(retryInput);
       
-      // 重试后也要处理storage清空
+      // 重试后也移除了storage清空逻辑
       if (success) {
-        this.utils.log(`${this.siteName}: 重试发送成功，检查storage清空策略`);
-        await this.handleStorageClear();
+        this.hasSentSuccessfully = true;
+        this.utils.log(`${this.siteName}: 重试发送成功`);
       } else {
-        this.utils.log(`${this.siteName}: 重试发送失败，延迟清空storage`);
-        setTimeout(() => {
-          this.utils.clearStorage();
-        }, 10000); // 10秒后清空
+        this.utils.log(`${this.siteName}: 重试发送失败`);
       }
     } else {
-      this.utils.log(`${this.siteName}: 二次尝试仍然没有找到输入框，清空storage`);
-      // 如果找不到输入框，也要清空storage避免无限重试
-      this.utils.clearStorage();
+      this.utils.log(`${this.siteName}: 二次尝试仍然没有找到输入框，保留storage内容`);
     }
   }
 
@@ -276,71 +275,8 @@ class BaseHandler {
    * 根据是否是多模型场景来决定清空时机
    */
   async handleStorageClear() {
-    try {
-      // 检查扩展上下文是否有效
-      if (!chrome.runtime || !chrome.runtime.id) {
-        return;
-      }
-
-      // 检查是否是多模型场景
-      chrome.storage.local.get(['multiModelClearTime', 'multiModelCount', 'multiModelProcessed'], (result) => {
-        try {
-          // 检查运行时错误
-          if (chrome.runtime.lastError) {
-            return;
-          }
-
-          const { multiModelClearTime, multiModelCount, multiModelProcessed } = result || {};
-          
-          if (multiModelClearTime && multiModelCount) {
-            // 多模型场景
-            const newProcessed = (multiModelProcessed || 0) + 1;
-            // 再次检查上下文
-            if (chrome.runtime && chrome.runtime.id) {
-              chrome.storage.local.set({ multiModelProcessed: newProcessed });
-            }
-            
-            this.utils.log(`${this.siteName}: 多模型场景，已处理 ${newProcessed}/${multiModelCount} 个模型`);
-            
-            // 检查是否所有模型都已处理完成
-            if (newProcessed >= multiModelCount) {
-              this.utils.log(`${this.siteName}: 所有模型已处理完成，立即清空storage`);
-              this.utils.clearStorage();
-              // 清空多模型标记
-              if (chrome.runtime && chrome.runtime.id) {
-                chrome.storage.local.remove(['multiModelClearTime', 'multiModelCount', 'multiModelProcessed']);
-              }
-            } else {
-              // 还有模型未处理，检查是否超时
-              const currentTime = Date.now();
-              if (currentTime > multiModelClearTime) {
-                this.utils.log(`${this.siteName}: 多模型处理超时，强制清空storage`);
-                this.utils.clearStorage();
-                if (chrome.runtime && chrome.runtime.id) {
-                  chrome.storage.local.remove(['multiModelClearTime', 'multiModelCount', 'multiModelProcessed']);
-                }
-              } else {
-                this.utils.log(`${this.siteName}: 等待其他模型处理完成或超时`);
-              }
-            }
-          } else {
-            // 单模型场景，直接清空
-            this.utils.log(`${this.siteName}: 单模型场景，立即清空storage`);
-            this.utils.clearStorage();
-          }
-        } catch (err) {
-          // 忽略回调中的错误
-        }
-      });
-    } catch (error) {
-      this.utils.log(`${this.siteName}: 处理storage清空策略时出错: ${error.message}`);
-      // 出错时直接清空，避免storage残留
-      try {
-        this.utils.clearStorage();
-      } catch (e) {
-        // 忽略
-      }
-    }
+    // 清空处理逻辑已被移除，保留方法定义以兼容现有代码调用，但方法体为空或仅打日志
+    this.utils.log(`${this.siteName}: handleStorageClear已被禁用，统一由新tab页初始化时清空`);
   }
 
   /**

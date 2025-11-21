@@ -144,21 +144,14 @@ class ChatABUtils {
    */
   static clearStorage() {
     setTimeout(() => {
-      // 检查运行时是否有效
-      let isRuntimeValid = false;
       try {
-        isRuntimeValid = typeof chrome !== 'undefined' && chrome.runtime && !!chrome.runtime.id;
-      } catch (e) {
-        // 忽略检查过程中的错误
-      }
+        // 严格检查上下文有效性
+        if (typeof chrome === 'undefined' || !chrome.runtime || !chrome.runtime.id || !chrome.storage || !chrome.storage.local) {
+          return;
+        }
 
-      if (!isRuntimeValid) return;
-
-      try {
         chrome.storage.local.remove(['inputValue', 'multiModelClearTime', 'multiModelCount', 'multiModelProcessed'], () => {
-          // 在回调中再次捕获错误，防止异步执行时上下文失效
           try {
-            // 检查 lastError 避免报错
             if (chrome.runtime.lastError) return;
             console.log('ChatAB: 清空 storage');
           } catch (err) {
@@ -166,7 +159,7 @@ class ChatABUtils {
           }
         });
       } catch (e) {
-        // 忽略调用过程中的错误
+        // 忽略所有错误，包括上下文失效
       }
     }, 1000);
   }
@@ -175,46 +168,7 @@ class ChatABUtils {
    * 启动多模型超时检查定时器
    */
   static startMultiModelTimeoutCheck() {
-    // 每10秒检查一次是否有超时的多模型任务
-    const intervalId = setInterval(() => {
-      let isRuntimeValid = false;
-      try {
-        isRuntimeValid = typeof chrome !== 'undefined' && chrome.runtime && !!chrome.runtime.id;
-      } catch (e) {
-        // 忽略
-      }
-
-      if (!isRuntimeValid) {
-        console.log('ChatAB: 扩展上下文已失效，停止超时检查');
-        clearInterval(intervalId);
-        return;
-      }
-
-      try {
-        chrome.storage.local.get(['multiModelClearTime'], (result) => {
-          try {
-            // 检查运行时错误
-            if (chrome.runtime.lastError) return;
-
-            const { multiModelClearTime } = result || {};
-            if (multiModelClearTime && Date.now() > multiModelClearTime) {
-              console.log('ChatAB: 多模型处理超时，强制清空storage');
-              ChatABUtils.clearStorage();
-            }
-          } catch (err) {
-            // 忽略回调错误
-          }
-        });
-      } catch (error) {
-        // 捕获可能的上下文失效错误
-        if (error.message && error.message.includes('Extension context invalidated')) {
-          console.log('ChatAB: 扩展上下文已失效，停止超时检查');
-          clearInterval(intervalId);
-        } else {
-          console.error('ChatAB: 超时检查出错', error);
-        }
-      }
-    }, 10000); // 每10秒检查一次
+    // 移除了基于定时器的超时清理逻辑
   }
 
   /**
