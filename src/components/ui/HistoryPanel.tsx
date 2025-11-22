@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { X, Clock, Trash2, MoreHorizontal, Edit2, Check } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { ModelInfo } from '../../lib/models';
 
 export interface HistoryItem {
@@ -32,6 +33,7 @@ export const HistoryPanel: React.FC<HistoryPanelProps> = ({
   onRename,
   onDelete
 }) => {
+  const { t } = useTranslation();
   const [activeMenuId, setActiveMenuId] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editValue, setEditValue] = useState("");
@@ -94,7 +96,7 @@ export const HistoryPanel: React.FC<HistoryPanelProps> = ({
           }`}>
             <div className="flex items-center gap-2">
               <Clock className="w-5 h-5" />
-              <h2 className="text-lg font-semibold">历史记录</h2>
+              <h2 className="text-lg font-semibold">{t('common.history')}</h2>
             </div>
             <div className="flex items-center gap-2">
               {history.length > 0 && (
@@ -103,7 +105,7 @@ export const HistoryPanel: React.FC<HistoryPanelProps> = ({
                   className={`p-2 rounded-full transition-colors ${
                     isDark ? 'hover:bg-gray-700 text-gray-400 hover:text-red-400' : 'hover:bg-gray-100 text-gray-500 hover:text-red-500'
                   }`}
-                  title="清空历史"
+                  title={t('history.clearHistory')}
                 >
                   <Trash2 className="w-5 h-5" />
                 </button>
@@ -123,7 +125,7 @@ export const HistoryPanel: React.FC<HistoryPanelProps> = ({
           <div className="flex-1 overflow-y-auto p-4 space-y-3">
             {history.length === 0 ? (
               <div className={`text-center py-8 ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>
-                暂无历史记录
+                {t('history.noHistory')}
               </div>
             ) : (
               history.map((item) => (
@@ -222,7 +224,7 @@ export const HistoryPanel: React.FC<HistoryPanelProps> = ({
                               }`}
                             >
                               <Edit2 className="w-4 h-4" />
-                              Rename
+                              {t('history.rename')}
                             </button>
                             <button
                               onClick={(e) => handleDeleteClick(item.id, e)}
@@ -231,7 +233,7 @@ export const HistoryPanel: React.FC<HistoryPanelProps> = ({
                               }`}
                             >
                               <Trash2 className="w-4 h-4" />
-                              Delete
+                              {t('history.delete')}
                             </button>
                           </div>
                         )}

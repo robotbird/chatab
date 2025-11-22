@@ -1,0 +1,42 @@
+{
+  "common": {
+    "askAnything": "Ask anything",
+    "support": "Support",
+    "inputRequired": "Please enter content",
+    "sendingTo": "Sending to {{modelName}}...",
+    "modelCount": "{{count}} models",
+    "settings": "Settings",
+    "history": "History",
+    "language": "Language"
+  },
+  "settings": {
+    "appearance": "Appearance",
+    "light": "Light",
+    "dark": "Dark",
+    "auto": "Auto",
+    "applications": "Applications",
+    "wallpaper": "Wallpaper",
+    "wallpaperMode": {
+      "manual": "Manual Switch",
+      "manualDesc": "Click 'Switch' to change manually",
+      "daily": "Daily Auto Update",
+      "dailyDesc": "Follow Bing daily wallpaper",
+      "disabled": "Disable Wallpaper",
+      "disabledDesc": "Don't show background wallpaper"
+    },
+    "wallpaperStatus": {
+      "current": "Current Wallpaper",
+      "retry": "Retry",
+      "retrying": "Retrying...",
+      "bingDaily": "Bing Daily Wallpaper",
+      "switch": "Switch",
+      "switching": "Switching..."
+    }
+  },
+  "history": {
+    "clearHistory": "Clear History",
+    "noHistory": "No history",
+    "rename": "Rename",
+    "delete": "Delete"
+  }
+}

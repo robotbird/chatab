@@ -1,0 +1,42 @@
+{
+  "common": {
+    "askAnything": "隨便問點什麼",
+    "support": "支援",
+    "inputRequired": "請輸入內容",
+    "sendingTo": "正在 {{modelName}} 中發送問題...",
+    "modelCount": "{{count}} 個模型",
+    "settings": "設定",
+    "history": "歷史記錄",
+    "language": "語言"
+  },
+  "settings": {
+    "appearance": "外觀",
+    "light": "淺色",
+    "dark": "深色",
+    "auto": "自動",
+    "applications": "應用",
+    "wallpaper": "桌布",
+    "wallpaperMode": {
+      "manual": "手動切換",
+      "manualDesc": "點擊換一個按鈕手動切換",
+      "daily": "每日自動更新",
+      "dailyDesc": "跟隨 Bing 每日桌布自動更新",
+      "disabled": "關閉桌布功能",
+      "disabledDesc": "不顯示背景桌布"
+    },
+    "wallpaperStatus": {
+      "current": "目前桌布",
+      "retry": "重試",
+      "retrying": "重試中...",
+      "bingDaily": "必應每日桌布",
+      "switch": "換一個",
+      "switching": "正在切換..."
+    }
+  },
+  "history": {
+    "clearHistory": "清空歷史",
+    "noHistory": "暫無歷史記錄",
+    "rename": "重新命名",
+    "delete": "刪除"
+  }
+}

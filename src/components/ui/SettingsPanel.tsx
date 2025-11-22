@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { X, Palette, Grid3X3 } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { Switch } from './switch';
 import { WallpaperSection } from './WallpaperSection';
 import { originalModels, getAppToggleStates, setAppToggleStates, AppToggleState } from '../../lib/models';
@@ -19,13 +20,14 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
   onThemeChange,
   onAppToggleChange
 }) => {
+  const { t } = useTranslation();
   const [selectedTheme, setSelectedTheme] = useState<'light' | 'dark' | 'auto'>('auto');
   const [appToggleStates, setAppToggleStatesLocal] = useState<AppToggleState>({});
 
   const themes = [
-    { id: 'light', name: '浅色', icon: '☀️' },
-    { id: 'dark', name: '深色', icon: '🌙' },
-    { id: 'auto', name: '自动', icon: '🔄' }
+    { id: 'light', name: t('settings.light'), icon: '☀️' },
+    { id: 'dark', name: t('settings.dark'), icon: '🌙' },
+    { id: 'auto', name: t('settings.auto'), icon: '🔄' }
   ];
 
   useEffect(() => {
@@ -43,7 +45,6 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
     localStorage.setItem('theme', theme);
     onThemeChange(theme);
   };
-
 
   const handleAppToggle = (appId: string) => {
     const newStates = {
@@ -78,7 +79,7 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
           <div className={`flex items-center justify-between p-4 border-b ${
             isDark ? 'border-gray-700' : 'border-gray-200'
           }`}>
-            <h2 className="text-lg font-semibold">设置</h2>
+            <h2 className="text-lg font-semibold">{t('common.settings')}</h2>
             <button
               onClick={onClose}
               className={`p-2 rounded-full transition-colors ${
@@ -95,7 +96,7 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
             <div>
               <div className="flex items-center gap-2 mb-3">
                 <Palette className="w-4 h-4" />
-                <h3 className="text-sm font-medium">外观</h3>
+                <h3 className="text-sm font-medium">{t('settings.appearance')}</h3>
               </div>
               <div className="grid grid-cols-3 gap-2">
                 {themes.map((theme) => (
@@ -124,7 +125,7 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
             <div>
               <div className="flex items-center gap-2 mb-3">
                 <Grid3X3 className="w-4 h-4" />
-                <h3 className="text-sm font-medium">应用</h3>
+                <h3 className="text-sm font-medium">{t('settings.applications')}</h3>
               </div>
               <div className="space-y-3">
                 {originalModels.map((model) => (

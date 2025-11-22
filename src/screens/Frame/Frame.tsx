@@ -1,5 +1,6 @@
 import { ChevronDown, Settings } from "lucide-react";
 import React, { useState, useEffect, useRef } from "react";
+import { useTranslation } from "react-i18next";
 import { Card, CardContent } from "../../components/ui/card";
 import { IconLink } from "../../components/ui/IconLink";
 import { SendIcon } from "../../components/ui/SendIcon";
@@ -47,6 +48,7 @@ declare global {
 }
 
 export const Frame = (): JSX.Element => {
+  const { t, i18n } = useTranslation();
   // 从 recentModels 中获取最后使用的模型作为初始值，如果没有则默认为 chatgpt
   const getInitialSelectedModel = () => {
     const recent = getRecentModels();
@@ -56,7 +58,7 @@ export const Frame = (): JSX.Element => {
   const [selectedModel, setSelectedModel] = useState(getInitialSelectedModel());
   const [selectedModels, setSelectedModels] = useState<string[]>([getInitialSelectedModel()]); // 新增：多模型选择状态
   const [inputValue, setInputValue] = useState("");
-  const [placeholder, setPlaceholder] = useState("Ask anything");
+  const [placeholder, setPlaceholder] = useState(t('common.askAnything'));
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isHistoryOpen, setIsHistoryOpen] = useState(false); // 新增：历史记录面板状态
   const [history, setHistory] = useState<HistoryItem[]>([]); // 新增：历史记录数据
@@ -118,10 +120,10 @@ export const Frame = (): JSX.Element => {
 
 
 
-  // Update placeholder when model changes
+  // Update placeholder when model changes or language changes
   useEffect(() => {
-    setPlaceholder("Ask anything");
-  }, [selectedModel]);
+    setPlaceholder(t('common.askAnything'));
+  }, [selectedModel, t, i18n.language]);
 
 
   const [models, setModels] = useState<ModelInfo[]>([]);
@@ -258,7 +260,7 @@ export const Frame = (): JSX.Element => {
   // 处理发送功能
   const handleSend = () => {
     if (!inputValue.trim()) {
-      showToast('请输入内容', 'info');
+      showToast(t('common.inputRequired'), 'info');
       return;
     }
     
@@ -294,7 +296,7 @@ export const Frame = (): JSX.Element => {
         if (model) {
           setTimeout(() => {
             // 显示当前模型的 toast
-            showToast(`正在 ${model.name} 中发送问题...`, 'success');
+            showToast(t('common.sendingTo', { modelName: model.name }), 'success');
             
             // 延迟一点时间再打开标签页，确保 toast 能显示
             setTimeout(() => {
@@ -507,7 +509,7 @@ export const Frame = (): JSX.Element => {
                       >
                         {selectedModels.length === 1 
                           ? models.find(m => m.id === selectedModels[0])?.name
-                          : `${selectedModels.length} 个模型`}
+                          : t('common.modelCount', { count: selectedModels.length })}
                       </span>
                       <ChevronDown className={`w-4 h-4 ml-1 transition-transform duration-200 opacity-100 rotate-180 ${isDark ? 'text-gray-400' : 'text-gray-500'}`} />
                       {selectedModels.length === 1 && (
@@ -611,7 +613,7 @@ export const Frame = (): JSX.Element => {
       {/* Support Link */}
       <div className="absolute bottom-8 w-full text-center z-10 flex justify-center items-center gap-2 text-sm">
         <span className={isDark ? 'text-gray-500' : 'text-gray-400'}>
-          Support
+          {t('common.support')}
         </span>
         <a
           href="https://x.com/PMAndDog"

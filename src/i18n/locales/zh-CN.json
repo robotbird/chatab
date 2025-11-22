@@ -1,0 +1,42 @@
+{
+  "common": {
+    "askAnything": "随便问点什么",
+    "support": "支持",
+    "inputRequired": "请输入内容",
+    "sendingTo": "正在 {{modelName}} 中发送问题...",
+    "modelCount": "{{count}} 个模型",
+    "settings": "设置",
+    "history": "历史记录",
+    "language": "语言"
+  },
+  "settings": {
+    "appearance": "外观",
+    "light": "浅色",
+    "dark": "深色",
+    "auto": "自动",
+    "applications": "应用",
+    "wallpaper": "壁纸",
+    "wallpaperMode": {
+      "manual": "手动切换",
+      "manualDesc": "点击换一个按钮手动切换",
+      "daily": "每日自动更新",
+      "dailyDesc": "跟随 Bing 每日壁纸自动更新",
+      "disabled": "关闭壁纸功能",
+      "disabledDesc": "不显示背景壁纸"
+    },
+    "wallpaperStatus": {
+      "current": "当前壁纸",
+      "retry": "重试",
+      "retrying": "重试中...",
+      "bingDaily": "必应每日壁纸",
+      "switch": "换一个",
+      "switching": "正在切换..."
+    }
+  },
+  "history": {
+    "clearHistory": "清空历史",
+    "noHistory": "暂无历史记录",
+    "rename": "重命名",
+    "delete": "删除"
+  }
+}

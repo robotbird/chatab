@@ -1,0 +1,42 @@
+{
+  "common": {
+    "askAnything": "何でも聞いてください",
+    "support": "サポート",
+    "inputRequired": "内容を入力してください",
+    "sendingTo": "{{modelName}} に送信中...",
+    "modelCount": "{{count}} モデル",
+    "settings": "設定",
+    "history": "履歴",
+    "language": "言語"
+  },
+  "settings": {
+    "appearance": "外観",
+    "light": "ライト",
+    "dark": "ダーク",
+    "auto": "自動",
+    "applications": "アプリ",
+    "wallpaper": "壁紙",
+    "wallpaperMode": {
+      "manual": "手動切り替え",
+      "manualDesc": "ボタンをクリックして切り替え",
+      "daily": "毎日自動更新",
+      "dailyDesc": "Bingの日替わり壁紙を使用",
+      "disabled": "壁紙を無効化",
+      "disabledDesc": "背景壁紙を表示しない"
+    },
+    "wallpaperStatus": {
+      "current": "現在の壁紙",
+      "retry": "再試行",
+      "retrying": "再試行中...",
+      "bingDaily": "Bingの日替わり壁紙",
+      "switch": "切り替え",
+      "switching": "切り替え中..."
+    }
+  },
+  "history": {
+    "clearHistory": "履歴を消去",
+    "noHistory": "履歴なし",
+    "rename": "名前を変更",
+    "delete": "削除"
+  }
+}

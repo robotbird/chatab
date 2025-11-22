@@ -3,6 +3,7 @@ import { createRoot } from "react-dom/client";
 import { Frame } from "./screens/Frame";
 import "../tailwind.css";
 import { wallpaperService } from "./lib/wallpaperService";
+import "./i18n"; // Import i18n configuration
 
 // 提前初始化壁纸，确保新标签页一打开就应用背景
 (async () => {

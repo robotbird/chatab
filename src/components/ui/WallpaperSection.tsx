@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Image, RefreshCw, ChevronDown } from 'lucide-react';
+import { Image, RefreshCw } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { wallpaperService, WallpaperData, WallpaperSettings } from '../../lib/wallpaperService';
 
 interface WallpaperSectionProps {
@@ -7,15 +8,16 @@ interface WallpaperSectionProps {
 }
 
 export const WallpaperSection: React.FC<WallpaperSectionProps> = ({ isDark }) => {
+  const { t } = useTranslation();
   const [currentWallpaper, setCurrentWallpaper] = useState<WallpaperData | null>(null);
   const [wallpaperSettings, setWallpaperSettings] = useState<WallpaperSettings>({ mode: 'manual' });
   const [isLoading, setIsLoading] = useState(false);
   const [thumbnailError, setThumbnailError] = useState(false);
 
   const wallpaperModes = [
-    { id: 'manual', name: '手动切换', description: '点击换一个按钮手动切换' },
-    { id: 'daily', name: '每日自动更新', description: '跟随 Bing 每日壁纸自动更新' },
-    { id: 'disabled', name: '关闭壁纸功能', description: '不显示背景壁纸' }
+    { id: 'manual', name: t('settings.wallpaperMode.manual'), description: t('settings.wallpaperMode.manualDesc') },
+    { id: 'daily', name: t('settings.wallpaperMode.daily'), description: t('settings.wallpaperMode.dailyDesc') },
+    { id: 'disabled', name: t('settings.wallpaperMode.disabled'), description: t('settings.wallpaperMode.disabledDesc') }
   ];
 
   // 加载当前壁纸和设置
@@ -126,7 +128,7 @@ export const WallpaperSection: React.FC<WallpaperSectionProps> = ({ isDark }) =>
     <div>
       <div className="flex items-center gap-2 mb-3">
         <Image className="w-4 h-4" />
-        <h3 className="text-sm font-medium">壁纸</h3>
+        <h3 className="text-sm font-medium">{t('settings.wallpaper')}</h3>
       </div>
       
       <div className="space-y-4">
@@ -140,7 +142,7 @@ export const WallpaperSection: React.FC<WallpaperSectionProps> = ({ isDark }) =>
               {currentWallpaper && !thumbnailError ? (
                 <img
                   src={getThumbnailUrl(currentWallpaper)}
-                  alt={currentWallpaper.title || '当前壁纸'}
+                  alt={currentWallpaper.title || t('settings.wallpaperStatus.current')}
                   className="w-full h-full object-cover"
                   onError={handleThumbnailError}
                 />
@@ -155,7 +157,7 @@ export const WallpaperSection: React.FC<WallpaperSectionProps> = ({ isDark }) =>
                       disabled={isLoading}
                       className="text-xs px-2 py-1 rounded border hover:bg-opacity-80 transition-colors"
                     >
-                      {isLoading ? '重试中...' : '重试'}
+                      {isLoading ? t('settings.wallpaperStatus.retrying') : t('settings.wallpaperStatus.retry')}
                     </button>
                   )}
                 </div>
@@ -175,7 +177,7 @@ export const WallpaperSection: React.FC<WallpaperSectionProps> = ({ isDark }) =>
                 <p className={`text-xs truncate ${
                   isDark ? 'text-gray-300' : 'text-gray-600'
                 }`}>
-                  {currentWallpaper.title || currentWallpaper.copyright || '必应每日壁纸'}
+                  {currentWallpaper.title || currentWallpaper.copyright || t('settings.wallpaperStatus.bingDaily')}
                 </p>
               </div>
             )}
@@ -195,17 +197,17 @@ export const WallpaperSection: React.FC<WallpaperSectionProps> = ({ isDark }) =>
           >
             <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
             <span className="text-sm">
-              {isLoading ? '正在切换...' : '换一个'}
+              {isLoading ? t('settings.wallpaperStatus.switching') : t('settings.wallpaperStatus.switch')}
             </span>
           </button>
         </div>
 
-        {/* 壁纸设置下拉选项 */}
+        {/* 壁纸设置下拉选项 - 暂时注释掉，保留代码结构 */}
         {/* <div>
           <label className={`block text-xs font-medium mb-2 ${
             isDark ? 'text-gray-300' : 'text-gray-600'
           }`}>
-            壁纸设置
+            {t('settings.wallpaper')}
           </label>
           
           <div className="relative">
@@ -230,9 +232,6 @@ export const WallpaperSection: React.FC<WallpaperSectionProps> = ({ isDark }) =>
             }`} />
           </div>
         </div> */}
-
-
-
       </div>
     </div>
   );
