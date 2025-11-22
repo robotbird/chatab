@@ -31,7 +31,6 @@ class ChatGPTHandler extends BaseHandler {
    */
   async fillContentEditable(element, text) {
     element.focus();
-    await this.utils.wait(200);
 
     // 检查是否是ProseMirror编辑器
     if (element.classList.contains('ProseMirror') || element.id === 'prompt-textarea') {

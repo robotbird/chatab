@@ -71,44 +71,21 @@ class DeepSeekHandler extends BaseHandler {
     // 清空现有内容
     await this.clearInputContent(inputElement);
     
-    // 分批快速填充，营造数据流效果
-    const chunks = this.splitTextIntoChunks(text, 10);
-    
-    for (let i = 0; i < chunks.length; i++) {
-      const chunk = chunks[i];
-      
-      if (inputElement.tagName.toLowerCase() === 'textarea' || inputElement.tagName.toLowerCase() === 'input') {
-        inputElement.value += chunk;
-        const inputEvent = new Event('input', { bubbles: true });
-        inputElement.dispatchEvent(inputEvent);
-      } else if (inputElement.contentEditable === 'true') {
-        inputElement.textContent += chunk;
-        const inputEvent = new Event('input', { bubbles: true });
-        inputElement.dispatchEvent(inputEvent);
-      }
-      
-      // 短暂延迟营造数据流感觉
-      await this.utils.wait(50);
+    // 直接一次性填充内容，去掉数据流效果
+    if (inputElement.tagName.toLowerCase() === 'textarea' || inputElement.tagName.toLowerCase() === 'input') {
+      inputElement.value = text;
+      const inputEvent = new Event('input', { bubbles: true });
+      inputElement.dispatchEvent(inputEvent);
+    } else if (inputElement.contentEditable === 'true') {
+      inputElement.textContent = text;
+      const inputEvent = new Event('input', { bubbles: true });
+      inputElement.dispatchEvent(inputEvent);
     }
 
     // 触发最终的事件确保状态同步
     await this.triggerFinalEvents(inputElement);
     
     this.utils.log('DeepSeek: 快速填充完成');
-  }
-
-  /**
-   * 将文本分割成块
-   * @param {string} text 
-   * @param {number} chunkSize 
-   * @returns {string[]}
-   */
-  splitTextIntoChunks(text, chunkSize) {
-    const chunks = [];
-    for (let i = 0; i < text.length; i += chunkSize) {
-      chunks.push(text.slice(i, i + chunkSize));
-    }
-    return chunks;
   }
 
   /**
