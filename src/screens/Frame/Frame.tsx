@@ -608,6 +608,26 @@ export const Frame = (): JSX.Element => {
         </Card>
       </div>
       
+      {/* Support Link */}
+      <div className="absolute bottom-8 w-full text-center z-10 flex justify-center items-center gap-2 text-sm">
+        <span className={isDark ? 'text-gray-500' : 'text-gray-400'}>
+          Support
+        </span>
+        <a
+          href="https://x.com/PMAndDog"
+          target="_blank"
+          rel="noopener noreferrer"
+          className={`flex items-center gap-1 transition-colors duration-200 ${
+            isDark ? 'text-gray-500 hover:text-gray-300' : 'text-gray-400 hover:text-gray-600'
+          }`}
+        >
+          <svg viewBox="0 0 24 24" aria-hidden="true" className="w-3.5 h-3.5 fill-current">
+            <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
+          </svg>
+          <span>robotbird</span>
+        </a>
+      </div>
+
       {/* Settings Panel */}
       <SettingsPanel
         isOpen={isSettingsOpen}
