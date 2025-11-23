@@ -1,5 +1,5 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { X, Clock, Trash2, MoreHorizontal, Edit2, Check } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { X, Clock, Trash2, MoreHorizontal } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { ModelInfo } from '../../lib/models';
 
@@ -18,7 +18,6 @@ interface HistoryPanelProps {
   models: ModelInfo[];
   onSelect: (text: string) => void;
   onClear: () => void;
-  onRename?: (id: string, newText: string) => void;
   onDelete?: (id: string) => void;
 }
 
@@ -30,13 +29,10 @@ export const HistoryPanel: React.FC<HistoryPanelProps> = ({
   models,
   onSelect,
   onClear,
-  onRename,
   onDelete
 }) => {
   const { t } = useTranslation();
   const [activeMenuId, setActiveMenuId] = useState<string | null>(null);
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [editValue, setEditValue] = useState("");
   
   // Click outside handler to close menu
   useEffect(() => {
@@ -48,22 +44,6 @@ export const HistoryPanel: React.FC<HistoryPanelProps> = ({
     document.addEventListener('click', handleClickOutside);
     return () => document.removeEventListener('click', handleClickOutside);
   }, [activeMenuId]);
-
-  const handleRenameStart = (item: HistoryItem, e: React.MouseEvent) => {
-    e.stopPropagation();
-    setEditingId(item.id);
-    setEditValue(item.text);
-    setActiveMenuId(null);
-  };
-
-  const handleRenameSave = (id: string, e?: React.MouseEvent) => {
-    e?.stopPropagation();
-    if (editValue.trim() && onRename) {
-      onRename(id, editValue.trim());
-    }
-    setEditingId(null);
-    setEditValue("");
-  };
 
   const handleDeleteClick = (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
@@ -132,10 +112,8 @@ export const HistoryPanel: React.FC<HistoryPanelProps> = ({
                 <div
                   key={item.id}
                   onClick={() => {
-                    if (editingId !== item.id) {
-                      onSelect(item.text);
-                      onClose();
-                    }
+                    onSelect(item.text);
+                    onClose();
                   }}
                   className={`p-2 rounded-lg cursor-pointer transition-colors relative group ${
                     isDark 
@@ -166,37 +144,12 @@ export const HistoryPanel: React.FC<HistoryPanelProps> = ({
                         })}
                       </div>
                       
-                      {editingId === item.id ? (
-                        <div className="flex items-center gap-1 flex-1" onClick={e => e.stopPropagation()}>
-                          <input
-                            type="text"
-                            value={editValue}
-                            onChange={(e) => setEditValue(e.target.value)}
-                            onKeyDown={(e) => {
-                              if (e.key === 'Enter') handleRenameSave(item.id);
-                              if (e.key === 'Escape') setEditingId(null);
-                            }}
-                            autoFocus
-                            className={`w-full px-2 py-1 rounded text-sm ${
-                              isDark ? 'bg-gray-800 text-white border-gray-600' : 'bg-white text-gray-900 border-gray-300'
-                            } border focus:outline-none focus:border-blue-500`}
-                          />
-                          <button
-                            onClick={(e) => handleRenameSave(item.id, e)}
-                            className={`p-1 rounded-full ${isDark ? 'hover:bg-gray-600' : 'hover:bg-gray-200'}`}
-                          >
-                            <Check className="w-4 h-4 text-green-500" />
-                          </button>
-                        </div>
-                      ) : (
-                        <span className={`text-sm font-medium truncate flex-1 ${isDark ? 'text-gray-200' : 'text-gray-700'}`}>
-                          {item.text.length > 20 ? item.text.substring(0, 20) + '...' : item.text}
-                        </span>
-                      )}
+                      <span className={`text-sm font-medium truncate flex-1 ${isDark ? 'text-gray-200' : 'text-gray-700'}`}>
+                        {item.text.length > 20 ? item.text.substring(0, 20) + '...' : item.text}
+                      </span>
                     </div>
 
-                    {editingId !== item.id && (
-                      <div className="relative shrink-0">
+                    <div className="relative shrink-0">
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
@@ -218,15 +171,6 @@ export const HistoryPanel: React.FC<HistoryPanelProps> = ({
                             onClick={e => e.stopPropagation()}
                           >
                             <button
-                              onClick={(e) => handleRenameStart(item, e)}
-                              className={`w-full text-left px-4 py-2 text-sm flex items-center gap-2 ${
-                                isDark ? 'text-gray-200 hover:bg-gray-700' : 'text-gray-700 hover:bg-gray-100'
-                              }`}
-                            >
-                              <Edit2 className="w-4 h-4" />
-                              {t('history.rename')}
-                            </button>
-                            <button
                               onClick={(e) => handleDeleteClick(item.id, e)}
                               className={`w-full text-left px-4 py-2 text-sm flex items-center gap-2 text-red-500 ${
                                 isDark ? 'hover:bg-gray-700' : 'hover:bg-gray-100'
@@ -238,7 +182,6 @@ export const HistoryPanel: React.FC<HistoryPanelProps> = ({
                           </div>
                         )}
                       </div>
-                    )}
                   </div>
                 </div>
               ))

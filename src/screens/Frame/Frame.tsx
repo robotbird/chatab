@@ -243,14 +243,6 @@ export const Frame = (): JSX.Element => {
     localStorage.removeItem('chat_history');
   };
 
-  const handleRenameHistory = (id: string, newText: string) => {
-    const newHistory = history.map(item => 
-      item.id === id ? { ...item, text: newText } : item
-    );
-    setHistory(newHistory);
-    localStorage.setItem('chat_history', JSON.stringify(newHistory));
-  };
-
   const handleDeleteHistory = (id: string) => {
     const newHistory = history.filter(item => item.id !== id);
     setHistory(newHistory);
@@ -648,7 +640,6 @@ export const Frame = (): JSX.Element => {
         models={models}
         onSelect={(text) => setInputValue(text)}
         onClear={clearHistory}
-        onRename={handleRenameHistory}
         onDelete={handleDeleteHistory}
       />
       
