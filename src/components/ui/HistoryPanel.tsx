@@ -122,7 +122,7 @@ export const HistoryPanel: React.FC<HistoryPanelProps> = ({
           </div>
 
           {/* Content */}
-          <div className="flex-1 overflow-y-auto p-4 space-y-3">
+          <div className="flex-1 overflow-y-auto p-4 space-y-1">
             {history.length === 0 ? (
               <div className={`text-center py-8 ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>
                 {t('history.noHistory')}
@@ -137,10 +137,10 @@ export const HistoryPanel: React.FC<HistoryPanelProps> = ({
                       onClose();
                     }
                   }}
-                  className={`p-3 rounded-lg cursor-pointer transition-colors border relative group ${
+                  className={`p-2 rounded-lg cursor-pointer transition-colors relative group ${
                     isDark 
-                      ? 'bg-gray-700/50 border-gray-700 hover:bg-gray-700' 
-                      : 'bg-gray-50 border-gray-200 hover:bg-gray-100'
+                      ? 'hover:bg-gray-700' 
+                      : 'hover:bg-gray-100'
                   }`}
                 >
                   <div className="flex items-center gap-3 justify-between">
@@ -153,7 +153,7 @@ export const HistoryPanel: React.FC<HistoryPanelProps> = ({
                             <div 
                               key={`${item.id}-${modelId}`}
                               className={`w-6 h-6 rounded-full flex items-center justify-center border-2 ${
-                                isDark ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-50'
+                                isDark ? 'bg-gray-800 border-gray-800' : 'bg-white border-white'
                               }`}
                             >
                               <img 
