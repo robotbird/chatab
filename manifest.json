@@ -2,14 +2,15 @@
   "manifest_version": 3,
   "name": "ChaTab",
   "version": "1.2.0",
-  "description": "快速批量提交prompt到ChatGPT,DeepSeek等应用界面，能够快速比较不同模型之间的回答区别.",
+  "description": "__MSG_description__",
+  "default_locale": "en",
   "author": "ChaTab",
   "chrome_url_overrides": {
     "newtab": "index.html"
   },
   "action": {
     "default_icon": "icons/icon48.png",
-    "default_title": "ChaTab"
+    "default_title": "__MSG_title__"
   },
   "icons": {
     "16": "icons/icon16.png",
