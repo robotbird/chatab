@@ -127,13 +127,11 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
                 <Grid3X3 className="w-4 h-4" />
                 <h3 className="text-sm font-medium">{t('settings.applications')}</h3>
               </div>
-              <div className="space-y-3">
+              <div className="space-y-1">
                 {originalModels.map((model) => (
                   <div
                     key={model.id}
-                    className={`flex items-center justify-between p-3 rounded-lg ${
-                      isDark ? 'bg-gray-700' : 'bg-gray-50'
-                    }`}
+                    className="flex items-center justify-between p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700/50 transition-colors"
                   >
                     <div className="flex items-center gap-3">
                       <img
