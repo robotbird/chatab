@@ -7,7 +7,7 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "build:extension": "vite build && cp manifest.json dist/ && mkdir -p dist/icons && cp -r public/* dist/"
+    "build:extension": "vite build && cp manifest.json dist/ && mkdir -p dist/icons && cp -r public/* dist/ && cp -r _locales dist/"
   },
   "dependencies": {
     "@radix-ui/react-select": "^2.0.0",

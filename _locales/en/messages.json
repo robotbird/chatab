@@ -1,6 +1,6 @@
 {
   "description": {
-    "message": "Quickly batch submit prompts to ChatGPT, DeepSeek and other application interfaces, enabling quick comparison of responses between different models."
+    "message": "Quickly batch submit prompts to ChatGPT, DeepSeek and other application interfaces"
   },
   "title": {
     "message": "ChaTab - One-click submit to ChatGPT, DeepSeek and other AI applications"
