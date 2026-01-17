@@ -75,14 +75,28 @@ function initScript() {
   }
   
   // 从 storage 获取输入内容
-  chrome.storage.local.get(['inputValue'], function(result) {
+  chrome.storage.local.get(['inputValue', 'sendTimestamp'], function(result) {
     const inputValue = result.inputValue;
-    
+    const sendTimestamp = result.sendTimestamp;
+
     if (!inputValue || !inputValue.trim()) {
       console.log('ChatAB: 没有找到要提交的内容，跳过处理');
       return;
     }
-    
+
+    // 检查内容是否过期（默认30秒）
+    const EXPIRATION_TIME = 30 * 1000; // 30秒
+    if (sendTimestamp) {
+      const elapsed = Date.now() - sendTimestamp;
+      if (elapsed > EXPIRATION_TIME) {
+        console.log(`ChatAB: 内容已过期（${Math.round(elapsed / 1000)}秒前发送），跳过处理`);
+        // 清除过期的 storage 数据
+        chrome.storage.local.remove(['inputValue', 'sendTimestamp', 'fromChaTab']);
+        return;
+      }
+      console.log(`ChatAB: 内容有效（${Math.round(elapsed / 1000)}秒前发送）`);
+    }
+
     console.log('ChatAB: 从 storage 获取到内容:', inputValue ? inputValue.substring(0, 50) + '...' : '无文本');
     
     // 获取网站配置

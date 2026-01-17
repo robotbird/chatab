@@ -177,9 +177,9 @@ export const Frame = (): JSX.Element => {
 
   // 初始化 recentModels 和 selectedModel
   useEffect(() => {
-    // 每次新建窗口时清理 storage 中的输入内容
+    // 每次新建窗口时清理 storage 中的输入内容和相关标记
     if (typeof window !== 'undefined' && window.chrome?.storage?.local) {
-      window.chrome.storage.local.remove(['inputValue', 'multiModelClearTime', 'multiModelCount', 'multiModelProcessed'], () => {
+      window.chrome.storage.local.remove(['inputValue', 'fromChaTab', 'sendTimestamp', 'multiModelClearTime', 'multiModelCount', 'multiModelProcessed'], () => {
         // 忽略错误
         if (window.chrome.runtime.lastError) return;
         console.log('ChatAB: 新窗口初始化，清理 storage');
@@ -268,7 +268,12 @@ export const Frame = (): JSX.Element => {
       if (model) {
         saveHistory(inputValue, selectedModels);
         if (window.chrome?.storage?.local) {
-          window.chrome.storage.local.set({ inputValue: inputValue });
+          // 添加 fromChaTab 标记和时间戳，表示是从 ChaTab 主动发起的请求
+          window.chrome.storage.local.set({
+            inputValue: inputValue,
+            fromChaTab: true,
+            sendTimestamp: Date.now()
+          });
         }
         // 延迟一小段时间显示禁用状态，然后跳转
         setTimeout(() => {
@@ -279,7 +284,12 @@ export const Frame = (): JSX.Element => {
       // 多模型：所有模型都在新标签页打开
       saveHistory(inputValue, selectedModels);
       if (window.chrome?.storage?.local) {
-        window.chrome.storage.local.set({ inputValue: inputValue });
+        // 添加 fromChaTab 标记和时间戳，表示是从 ChaTab 主动发起的请求
+        window.chrome.storage.local.set({
+          inputValue: inputValue,
+          fromChaTab: true,
+          sendTimestamp: Date.now()
+        });
       }
       
       // 逐个显示 toast 并打开新标签页

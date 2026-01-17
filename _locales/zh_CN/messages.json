@@ -3,7 +3,7 @@
     "message": "快速批量提交prompt到ChatGPT,DeepSeek等应用界面，能够快速比较不同模型之间的回答区别."
   },
   "title": {
-    "message": "ChaTab - 一键提交到ChatGPT、DeepSeek等AI应用"
+    "message": "ChaTab - 一键发送至多个AI应用"
   }
 }
 

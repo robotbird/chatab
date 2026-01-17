@@ -3,7 +3,7 @@
     "message": "ChatGPT、DeepSeekなどのアプリケーションインターフェースにプロンプトを一括送信し、異なるモデル間の回答の違いを素早く比較できます。"
   },
   "title": {
-    "message": "ChaTab - ChatGPT、DeepSeekなどのAIアプリケーションにワンクリックで送信"
+    "message": "ChaTab - ワンクリックで複数のAIアプリに送信"
   }
 }
 
