@@ -52,11 +52,11 @@ export const originalModels: ModelInfo[] = [
     link: "https://www.kimi.com"
   },
   {
-    id: "tongyi",
-    name: "Tongyi",
-    icon: "/logo/tongyi.svg",
-    url: "https://tongyi.com",
-    link: "https://tongyi.com"
+    id: "qianwen",
+    name: "Qianwen",
+    icon: "/logo/qianwen.svg",
+    url: "https://qianwen.com",
+    link: "https://qianwen.com"
   },
   {
     id: "yuanbao",

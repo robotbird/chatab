@@ -17,7 +17,7 @@ class HandlerFactory {
     // 检查所有处理器类是否已加载
     const handlerClasses = [
       'ChatGPTHandler', 'DeepSeekHandler', 'GeminiHandler', 'DoubaoHandler',
-      'PerplexityHandler', 'KimiHandler', 'TongyiHandler', 'YuanbaoHandler',
+      'PerplexityHandler', 'KimiHandler', 'QianwenHandler', 'YuanbaoHandler',
       'GrokHandler', 'YiyanHandler'
     ];
     
@@ -34,7 +34,7 @@ class HandlerFactory {
     this.registerHandler('DOUBAO', window.DoubaoHandler);
     this.registerHandler('PERPLEXITY', window.PerplexityHandler);
     this.registerHandler('KIMI', window.KimiHandler);
-    this.registerHandler('TONGYI', window.TongyiHandler);
+    this.registerHandler('QIANWEN', window.QianwenHandler);
     this.registerHandler('YUANBAO', window.YuanbaoHandler);
     this.registerHandler('GROK', window.GrokHandler);
     this.registerHandler('YIYAN', window.YiyanHandler);

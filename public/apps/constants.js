@@ -30,9 +30,9 @@ const SUPPORTED_SITES = {
     hostname: 'kimi.com',
     delay: 2000
   },
-  TONGYI: {
-    name: 'Tongyi',
-    hostname: 'tongyi.com',
+  QIANWEN: {
+    name: 'Qianwen',
+    hostname: 'qianwen.com',
     delay: 5000 // 需要更长时间因为网站有加载问题
   },
   YUANBAO: {

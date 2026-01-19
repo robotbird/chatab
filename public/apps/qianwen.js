@@ -1,14 +1,19 @@
 /**
- * Tongyi 处理器
+ * Qianwen 处理器
  */
-class TongyiHandler extends BaseHandler {
+class QianwenHandler extends BaseHandler {
   constructor() {
-    super('Tongyi');
+    super('Qianwen');
   }
 
   getInputSelectors() {
     return [
+      'textarea[placeholder="向千问提问"]',
+      'textarea.ant-input-outlined[maxlength="200000"]',
+      'textarea.ant-input-outlined',
+      'textarea[placeholder*="千问"]',
       'textarea[placeholder*="遇事不决问通义"]',
+      'textarea.ant-input[maxlength="200000"]',
       'textarea.ant-input[maxlength="10000"]',
       'textarea[placeholder*="通义"]',
       'textarea.ant-input',
@@ -19,7 +24,7 @@ class TongyiHandler extends BaseHandler {
   }
 
   /**
-   * 获取通义特定的发送按钮选择器
+   * 获取千问特定的发送按钮选择器
    */
   getSendButtonSelectors() {
     return [
@@ -74,12 +79,12 @@ class TongyiHandler extends BaseHandler {
    * 重写查找输入框方法，添加调试信息
    */
   findInputElement() {
-    this.utils.log('Tongyi: 开始查找输入框');
+    this.utils.log('Qianwen: 开始查找输入框');
     
     // 调试信息
     const allTextareas = document.querySelectorAll('textarea');
     const antInputs = document.querySelectorAll('textarea.ant-input');
-    this.utils.log('Tongyi: 调试信息', {
+    this.utils.log('Qianwen: 调试信息', {
       textareaCount: allTextareas.length,
       antInputCount: antInputs.length
     });
@@ -87,18 +92,18 @@ class TongyiHandler extends BaseHandler {
     const inputElement = super.findInputElement();
     
     if (inputElement) {
-      this.utils.log(`Tongyi: 找到输入框，类型: ${inputElement.tagName} 类名: ${inputElement.className}`);
+      this.utils.log(`Qianwen: 找到输入框，类型: ${inputElement.tagName} 类名: ${inputElement.className}`);
     } else {
-      this.utils.log('Tongyi: 未找到输入框');
+      this.utils.log('Qianwen: 未找到输入框');
     }
     
     return inputElement;
   }
 }
 
-// 导出 Tongyi 处理器
+// 导出 Qianwen 处理器
 if (typeof module !== 'undefined' && module.exports) {
-  module.exports = TongyiHandler;
+  module.exports = QianwenHandler;
 } else {
-  window.TongyiHandler = TongyiHandler;
+  window.QianwenHandler = QianwenHandler;
 }

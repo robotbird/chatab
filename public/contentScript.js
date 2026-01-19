@@ -28,7 +28,7 @@ function initScript() {
   // 检查处理器类（可选，不阻塞基础功能）
   const handlerClasses = [
     'ChatGPTHandler', 'DeepSeekHandler', 'GeminiHandler', 'DoubaoHandler',
-    'PerplexityHandler', 'KimiHandler', 'TongyiHandler', 'YuanbaoHandler',
+    'PerplexityHandler', 'KimiHandler', 'QianwenHandler', 'YuanbaoHandler',
     'GrokHandler', 'YiyanHandler'
   ];
   const missingHandlers = handlerClasses.filter(handler => !window[handler]);
