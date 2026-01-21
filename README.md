@@ -65,7 +65,6 @@ ChatAB currently supports the following AI platforms:
 - 🌸 [通义千问 (Qianwen)](https://www.qianwen.com/)
 - 💰 [元宝 (Yuanbao)](https://yuanbao.tencent.com/)
 - 🤖 [Grok](https://grok.com/)
-- 🎯 [文心一言 (Yiyan)](https://yiyan.baidu.com/)
 
 ## 📦 Installation
 
