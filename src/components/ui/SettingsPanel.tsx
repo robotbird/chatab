@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { X, Palette, Grid3X3 } from 'lucide-react';
+import { X, Palette, Grid3X3, Edit2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { Switch } from './switch';
 import { WallpaperSection } from './WallpaperSection';
-import { originalModels, getAppToggleStates, setAppToggleStates, AppToggleState } from '../../lib/models';
+import { FlomoApiModal } from './FlomoApiModal';
+import { originalModels, getAppToggleStates, setAppToggleStates, AppToggleState, getFlomoApiUrl } from '../../lib/models';
 
 interface SettingsPanelProps {
   isOpen: boolean;
@@ -23,6 +24,7 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
   const { t } = useTranslation();
   const [selectedTheme, setSelectedTheme] = useState<'light' | 'dark' | 'auto'>('auto');
   const [appToggleStates, setAppToggleStatesLocal] = useState<AppToggleState>({});
+  const [isFlomoApiModalOpen, setIsFlomoApiModalOpen] = useState(false);
 
   const themes = [
     { id: 'light', name: t('settings.light'), icon: '☀️' },
@@ -47,15 +49,48 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
   };
 
   const handleAppToggle = (appId: string) => {
+    const isCurrentlyEnabled = appToggleStates[appId] ?? (appId === 'flomo' ? false : true);
+    const willBeEnabled = !isCurrentlyEnabled;
+    
+    // 如果是 flomo 且要开启，检查是否有 API URL
+    if (appId === 'flomo' && willBeEnabled) {
+      const apiUrl = getFlomoApiUrl();
+      if (!apiUrl || !apiUrl.trim()) {
+        // 没有 API URL，打开配置 modal
+        setIsFlomoApiModalOpen(true);
+        return; // 不切换开关状态，等待用户配置
+      }
+      // 如果有 API URL，直接开启，不需要弹出 modal
+    }
+    
     const newStates = {
       ...appToggleStates,
-      [appId]: !appToggleStates[appId]
+      [appId]: willBeEnabled
     };
     setAppToggleStatesLocal(newStates);
     setAppToggleStates(newStates);
     
     // 通知父组件状态改变
     onAppToggleChange?.();
+  };
+  
+  const handleFlomoApiEdit = () => {
+    setIsFlomoApiModalOpen(true);
+  };
+  
+  const handleFlomoApiModalClose = () => {
+    setIsFlomoApiModalOpen(false);
+    // 检查是否有 API URL，如果有则开启 flomo（如果之前是关闭状态）
+    const apiUrl = getFlomoApiUrl();
+    if (apiUrl && apiUrl.trim() && !appToggleStates.flomo) {
+      const newStates = {
+        ...appToggleStates,
+        flomo: true
+      };
+      setAppToggleStatesLocal(newStates);
+      setAppToggleStates(newStates);
+      onAppToggleChange?.();
+    }
   };
 
   return (
@@ -131,7 +166,7 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
                 {originalModels.map((model) => (
                   <div
                     key={model.id}
-                    className="flex items-center justify-between p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700/50 transition-colors"
+                    className="flex items-center justify-between p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700/50 transition-colors group"
                   >
                     <div className="flex items-center gap-3">
                       <img
@@ -141,10 +176,26 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
                       />
                       <span className="text-sm font-medium">{model.name}</span>
                     </div>
-                    <Switch
-                      checked={appToggleStates[model.id] ?? true}
-                      onChange={() => handleAppToggle(model.id)}
-                    />
+                    <div className="flex items-center gap-2">
+                      {model.id === 'flomo' && (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleFlomoApiEdit();
+                          }}
+                          className={`p-1 rounded transition-colors opacity-0 group-hover:opacity-100 ${
+                            isDark ? 'hover:bg-gray-700 text-gray-400 hover:text-gray-200' : 'hover:bg-gray-200 text-gray-400 hover:text-gray-600'
+                          }`}
+                          title={t('settings.editFlomoApi')}
+                        >
+                          <Edit2 className="w-4 h-4" />
+                        </button>
+                      )}
+                      <Switch
+                        checked={appToggleStates[model.id] ?? (model.id === 'flomo' ? false : true)}
+                        onChange={() => handleAppToggle(model.id)}
+                      />
+                    </div>
                   </div>
                 ))}
               </div>
@@ -152,6 +203,13 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
           </div>
         </div>
       </div>
+      
+      {/* Flomo API Modal */}
+      <FlomoApiModal
+        isOpen={isFlomoApiModalOpen}
+        onClose={handleFlomoApiModalClose}
+        isDark={isDark}
+      />
     </>
   );
 }; 

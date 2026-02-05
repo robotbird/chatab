@@ -72,6 +72,13 @@ export const originalModels: ModelInfo[] = [
     url: "https://grok.com",
     link: "https://grok.com"
   },
+  {
+    id: "flomo",
+    name: "flomo",
+    icon: "/logo/flomo.svg",
+    url: "",
+    link: "https://flomoapp.com"
+  },
   // {  放弃支持百度这种垃圾公司
   //   id: "yiyan",
   //   name: "Yiyan",
@@ -86,16 +93,20 @@ export interface AppToggleState {
   [modelId: string]: boolean;
 }
 
-// 获取应用开关状态，默认所有应用都启用
+// 获取应用开关状态，默认所有应用都启用，但 flomo 默认关闭
 export function getAppToggleStates(): AppToggleState {
   try {
     const stored = localStorage.getItem('appToggleStates');
     if (stored) {
       const states = JSON.parse(stored);
-      // 确保所有模型都有状态，新增的模型默认启用
+      // 确保所有模型都有状态，新增的模型默认启用，但 flomo 默认关闭
       const result: AppToggleState = {};
       originalModels.forEach(model => {
-        result[model.id] = states[model.id] !== undefined ? states[model.id] : true;
+        if (model.id === 'flomo') {
+          result[model.id] = states[model.id] !== undefined ? states[model.id] : false;
+        } else {
+          result[model.id] = states[model.id] !== undefined ? states[model.id] : true;
+        }
       });
       return result;
     }
@@ -103,10 +114,10 @@ export function getAppToggleStates(): AppToggleState {
     console.error('Failed to parse app toggle states:', error);
   }
   
-  // 默认所有应用都启用
+  // 默认所有应用都启用，但 flomo 默认关闭
   const defaultStates: AppToggleState = {};
   originalModels.forEach(model => {
-    defaultStates[model.id] = true;
+    defaultStates[model.id] = model.id === 'flomo' ? false : true;
   });
   return defaultStates;
 }
@@ -154,4 +165,22 @@ export function getSortedEnabledModels(recent: string[]): ModelInfo[] {
     ...enabledModels.filter(m => !idSet.has(m.id))
   ];
   return sorted;
+}
+
+// flomo API 管理
+export function getFlomoApiUrl(): string | null {
+  try {
+    return localStorage.getItem('flomoApiUrl');
+  } catch (error) {
+    console.error('Failed to get flomo API URL:', error);
+    return null;
+  }
+}
+
+export function setFlomoApiUrl(url: string): void {
+  try {
+    localStorage.setItem('flomoApiUrl', url);
+  } catch (error) {
+    console.error('Failed to save flomo API URL:', error);
+  }
 }

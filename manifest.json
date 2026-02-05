@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name":  "__MSG_title__",
-  "version": "1.2.2",
+  "version": "1.3.0",
   "description": "__MSG_description__",
   "default_locale": "en",
   "author": "ChaTab",
@@ -35,7 +35,8 @@
     "https://www.qianwen.com/*",
     "https://yuanbao.tencent.com/*",
     "https://grok.com/*",
-    "https://yiyan.baidu.com/*"
+    "https://yiyan.baidu.com/*",
+    "https://flomoapp.com/*"
   ],
   "content_scripts": [
     {

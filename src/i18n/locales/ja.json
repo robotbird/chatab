@@ -1,13 +1,16 @@
 {
   "common": {
     "askAnything": "何でも聞いてください",
+    "sendToFlomo": "あなたの flomo に送信",
     "support": "サポート",
     "inputRequired": "内容を入力してください",
     "sendingTo": "{{modelName}} に送信中...",
     "modelCount": "{{count}} モデル",
     "settings": "設定",
     "history": "履歴",
-    "language": "言語"
+    "language": "言語",
+    "cancel": "キャンセル",
+    "save": "保存"
   },
   "settings": {
     "appearance": "外観",
@@ -31,7 +34,15 @@
       "bingDaily": "Bingの日替わり壁紙",
       "switch": "切り替え",
       "switching": "切り替え中..."
-    }
+    },
+    "flomoApiTitle": "flomo API設定",
+    "flomoApiLabel": "flomo API URL",
+    "flomoApiPlaceholder": "https://flomoapp.com/iwh/...",
+    "flomoApiHint": "flomo設定からAPI URLを取得してください",
+    "flomoApiNotConfigured": "まずflomo API URLを設定してください",
+    "flomoSentSuccess": "flomoへの送信に成功しました",
+    "flomoSentError": "flomoへの送信に失敗しました。API URLを確認してください",
+    "editFlomoApi": "flomo APIを編集"
   },
   "history": {
     "clearHistory": "履歴を消去",

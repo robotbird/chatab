@@ -1,13 +1,16 @@
 {
   "common": {
     "askAnything": "隨便問點什麼",
+    "sendToFlomo": "發送到你的 flomo",
     "support": "支援",
     "inputRequired": "請輸入內容",
     "sendingTo": "正在 {{modelName}} 中發送問題...",
     "modelCount": "{{count}} 個模型",
     "settings": "設定",
     "history": "歷史記錄",
-    "language": "語言"
+    "language": "語言",
+    "cancel": "取消",
+    "save": "儲存"
   },
   "settings": {
     "appearance": "外觀",
@@ -31,7 +34,15 @@
       "bingDaily": "必應每日桌布",
       "switch": "換一個",
       "switching": "正在切換..."
-    }
+    },
+    "flomoApiTitle": "設定 flomo API",
+    "flomoApiLabel": "flomo API 位址",
+    "flomoApiPlaceholder": "https://flomoapp.com/iwh/...",
+    "flomoApiHint": "在 flomo 設定中取得你的 API 位址",
+    "flomoApiNotConfigured": "請先設定 flomo API 位址",
+    "flomoSentSuccess": "已成功發送到 flomo",
+    "flomoSentError": "發送到 flomo 失敗，請檢查 API 位址",
+    "editFlomoApi": "編輯 flomo API"
   },
   "history": {
     "clearHistory": "清空歷史",

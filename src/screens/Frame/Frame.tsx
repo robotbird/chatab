@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 import { Card, CardContent } from "../../components/ui/card";
 import { IconLink } from "../../components/ui/IconLink";
 import { SendIcon } from "../../components/ui/SendIcon";
+import { WaitIcon } from "../../components/ui/WaitIcon";
 import { SettingsPanel } from "../../components/ui/SettingsPanel";
 import { HistoryIcon } from "../../components/ui/HistoryIcon";
 import { HistoryPanel, HistoryItem } from "../../components/ui/HistoryPanel";
@@ -12,7 +13,8 @@ import {
   ModelInfo,
   getSortedEnabledModels,
   getRecentModels,
-  setRecentModels 
+  setRecentModels,
+  getFlomoApiUrl
 } from "../../lib/models";
 import { wallpaperService } from "../../lib/wallpaperService";
 
@@ -122,8 +124,13 @@ export const Frame = (): JSX.Element => {
 
   // Update placeholder when model changes or language changes
   useEffect(() => {
-    setPlaceholder(t('common.askAnything'));
-  }, [selectedModel, t, i18n.language]);
+    // 如果选择了 flomo，显示特殊的 placeholder
+    if (selectedModels.length === 1 && selectedModels[0] === 'flomo') {
+      setPlaceholder(t('common.sendToFlomo'));
+    } else {
+      setPlaceholder(t('common.askAnything'));
+    }
+  }, [selectedModel, selectedModels, t, i18n.language]);
 
 
   const [models, setModels] = useState<ModelInfo[]>([]);
@@ -249,8 +256,41 @@ export const Frame = (): JSX.Element => {
     localStorage.setItem('chat_history', JSON.stringify(newHistory));
   };
   
+  // 发送内容到 flomo API
+  const sendToFlomo = async (content: string): Promise<boolean> => {
+    const apiUrl = getFlomoApiUrl();
+    if (!apiUrl || !apiUrl.trim()) {
+      showToast(t('settings.flomoApiNotConfigured'), 'error');
+      return false;
+    }
+
+    try {
+      const response = await fetch(apiUrl.trim(), {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          content: content
+        })
+      });
+
+      if (response.ok) {
+        showToast(t('settings.flomoSentSuccess'), 'success');
+        return true;
+      } else {
+        showToast(t('settings.flomoSentError'), 'error');
+        return false;
+      }
+    } catch (error) {
+      console.error('Failed to send to flomo:', error);
+      showToast(t('settings.flomoSentError'), 'error');
+      return false;
+    }
+  };
+
   // 处理发送功能
-  const handleSend = () => {
+  const handleSend = async () => {
     if (!inputValue.trim()) {
       showToast(t('common.inputRequired'), 'info');
       return;
@@ -262,9 +302,28 @@ export const Frame = (): JSX.Element => {
     
     setIsSending(true); // 设置发送状态为true
     
-    if (selectedModels.length === 1) {
+    // 检查是否包含 flomo
+    const hasFlomo = selectedModels.includes('flomo');
+    const nonFlomoModels = selectedModels.filter(id => id !== 'flomo');
+    
+    // 如果有 flomo，先发送到 flomo
+    if (hasFlomo) {
+      const flomoSuccess = await sendToFlomo(inputValue);
+      if (flomoSuccess) {
+        // flomo 发送成功，清空输入框
+        setInputValue('');
+      }
+    }
+    
+    // 如果没有其他模型，或者只有 flomo，直接返回
+    if (nonFlomoModels.length === 0) {
+      setIsSending(false);
+      return;
+    }
+    
+    if (nonFlomoModels.length === 1) {
       // 单模型：直接跳转
-      const model = models.find(m => m.id === selectedModels[0]);
+      const model = models.find(m => m.id === nonFlomoModels[0]);
       if (model) {
         saveHistory(inputValue, selectedModels);
         if (window.chrome?.storage?.local) {
@@ -280,7 +339,7 @@ export const Frame = (): JSX.Element => {
           window.location.href = model.url;
         }, 100);
       }
-    } else if (selectedModels.length > 1) {
+    } else if (nonFlomoModels.length > 1) {
       // 多模型：所有模型都在新标签页打开
       saveHistory(inputValue, selectedModels);
       if (window.chrome?.storage?.local) {
@@ -293,7 +352,7 @@ export const Frame = (): JSX.Element => {
       }
       
       // 逐个显示 toast 并打开新标签页
-      selectedModels.forEach((modelId, index) => {
+      nonFlomoModels.forEach((modelId, index) => {
         const model = models.find(m => m.id === modelId);
         if (model) {
           setTimeout(() => {
@@ -309,14 +368,14 @@ export const Frame = (): JSX.Element => {
       });
       
       // 在所有模型都打开后设置storage清空逻辑
-      const totalDelay = selectedModels.length * 600 + 2000; // 最后一个模型打开后额外等待2秒，确保所有模型都有足够时间读取storage
+      const totalDelay = nonFlomoModels.length * 600 + 2000; // 最后一个模型打开后额外等待2秒，确保所有模型都有足够时间读取storage
       
       // 设置多模型storage清空标记
       if (window.chrome?.storage?.local) {
         const clearTime = Date.now() + 60000; // 1分钟后清空
         window.chrome.storage.local.set({ 
           multiModelClearTime: clearTime,
-          multiModelCount: selectedModels.length,
+          multiModelCount: nonFlomoModels.length,
           multiModelProcessed: 0
         });
       }
@@ -363,16 +422,44 @@ export const Frame = (): JSX.Element => {
       const isCurrentlySelected = prev.includes(modelId);
       let newSelected;
       
-      if (isCurrentlySelected) {
-        // 如果已选中，则取消选择（但至少保留一个）
-        if (prev.length > 1) {
-          newSelected = prev.filter(id => id !== modelId);
+      // 如果选择 flomo，只能单选，自动移除其他选项
+      if (modelId === 'flomo') {
+        if (isCurrentlySelected) {
+          // 如果 flomo 已选中，取消选择，选择第一个其他模型
+          const otherModels = models.filter(m => m.id !== 'flomo' && m.id !== prev[0]);
+          newSelected = otherModels.length > 0 ? [otherModels[0].id] : prev;
         } else {
-          newSelected = prev; // 不允许全部取消选择
+          // 如果 flomo 未选中，只选择 flomo
+          newSelected = ['flomo'];
         }
       } else {
-        // 如果未选中，则添加到选中列表
-        newSelected = [...prev, modelId];
+        // 如果选择其他模型，且 flomo 已选中，先移除 flomo
+        if (prev.includes('flomo')) {
+          if (isCurrentlySelected) {
+            // 如果已选中，则取消选择（但至少保留一个）
+            if (prev.length > 1) {
+              newSelected = prev.filter(id => id !== modelId);
+            } else {
+              newSelected = prev; // 不允许全部取消选择
+            }
+          } else {
+            // 如果未选中，先移除 flomo，然后添加到选中列表
+            newSelected = [...prev.filter(id => id !== 'flomo'), modelId];
+          }
+        } else {
+          // 正常的多选逻辑
+          if (isCurrentlySelected) {
+            // 如果已选中，则取消选择（但至少保留一个）
+            if (prev.length > 1) {
+              newSelected = prev.filter(id => id !== modelId);
+            } else {
+              newSelected = prev; // 不允许全部取消选择
+            }
+          } else {
+            // 如果未选中，则添加到选中列表
+            newSelected = [...prev, modelId];
+          }
+        }
       }
       
       // 更新主要选中模型为列表中的第一个
@@ -598,13 +685,23 @@ export const Frame = (): JSX.Element => {
                   className={`${isSending || !inputValue.trim() ? 'cursor-not-allowed' : 'cursor-pointer'}`}
                   disabled={isSending || !inputValue.trim()}
                 >
-                  <SendIcon 
-                    size={36}
-                    disabled={!inputValue.trim()}
-                    isSending={isSending}
-                    isDark={isDark}
-                    className="transition-all duration-200"
-                  />
+                  {isSending ? (
+                    <WaitIcon 
+                      size={36}
+                      disabled={!inputValue.trim()}
+                      isSending={isSending}
+                      isDark={isDark}
+                      className={`transition-all duration-200 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}
+                    />
+                  ) : (
+                    <SendIcon 
+                      size={36}
+                      disabled={!inputValue.trim()}
+                      isSending={isSending}
+                      isDark={isDark}
+                      className="transition-all duration-200"
+                    />
+                  )}
                 </button>
               </div>
             </div>
