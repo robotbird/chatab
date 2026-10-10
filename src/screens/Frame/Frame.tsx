@@ -715,7 +715,7 @@ export const Frame = (): JSX.Element => {
           {t('common.support')}
         </span>
         <a
-          href="https://x.com/PMAndDog"
+          href="https://x.com/robotbird01"
           target="_blank"
           rel="noopener noreferrer"
           className={`flex items-center gap-1 transition-colors duration-200 ${

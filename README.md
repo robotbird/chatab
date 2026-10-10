@@ -7,7 +7,7 @@ A browser extension that replaces your new tab page with a customizable chat int
 [![Version](https://img.shields.io/badge/version-1.2.2-blue.svg)](https://github.com/robotbird/chatab)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 [![Chrome](https://img.shields.io/badge/Chrome-Extension-yellow.svg)](https://chrome.google.com/webstore)
-[![Twitter](https://img.shields.io/badge/Twitter-Follow-blue.svg)](https://x.com/PMAndDog)
+[![Twitter](https://img.shields.io/badge/Twitter-Follow-blue.svg)](https://x.com/robotbird01)
 
 </div>
 
@@ -179,7 +179,7 @@ The extension uses content scripts to interact with various AI platforms. Each p
 
 Have questions, suggestions, or found a bug? I'd love to hear from you!
 
-- 🐦 **Follow me on [Twitter @PMAndDog](https://x.com/PMAndDog)** for updates, tips, and to share your feedback
+- 🐦 **Follow me on [Twitter @robotbird01](https://x.com/robotbird01)** for updates, tips, and to share your feedback
 - 🐛 **Report issues** on [GitHub Issues](https://github.com/robotbird/chatab/issues)
 - 💡 **Request features** by opening an issue or reaching out on Twitter
 
@@ -204,9 +204,9 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 **ChaTab Team**
 
 - Project Link: [https://github.com/robotbird/chatab](https://github.com/robotbird/chatab)
-- Twitter: [@robotbird](https://x.com/PMAndDog) - Follow me for updates and feel free to reach out with feedback or questions!
+- Twitter: [@robotbird](https://x.com/robotbird01) - Follow me for updates and feel free to reach out with feedback or questions!
 
-💬 **Have questions or feedback?** Follow me on [Twitter](https://x.com/PMAndDog) and let me know! I'd love to hear from you.
+💬 **Have questions or feedback?** Follow me on [Twitter](https://x.com/robotbird01) and let me know! I'd love to hear from you.
 
 ## 🙏 Acknowledgments
 
@@ -220,6 +220,6 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 Made with ❤️ by robotbird
 
-[Report Bug](https://github.com/robotbird/chatab/issues) · [Request Feature](https://github.com/robotbird/chatab/issues) · [Follow on Twitter](https://x.com/PMAndDog) · [Documentation](https://github.com/robotbird/chatab/wiki)
+[Report Bug](https://github.com/robotbird/chatab/issues) · [Request Feature](https://github.com/robotbird/chatab/issues) · [Follow on Twitter](https://x.com/robotbird01) · [Documentation](https://github.com/robotbird/chatab/wiki)
 
 </div>
